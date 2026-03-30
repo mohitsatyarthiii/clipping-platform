@@ -23,6 +23,16 @@ export async function POST(req, { params }) {
     }
 
     const { userId } = verifyToken(token);
+    const { platformLinks } = await req.json();
+
+    // Verify user is a creator
+    const user = await User.findById(userId);
+    if (!user || user.role !== 'creator') {
+      return Response.json(
+        { success: false, message: 'Only creators can join campaigns' },
+        { status: 403 }
+      );
+    }
 
     // Verify campaign exists
     const campaign = await Campaign.findById(campaignId);
@@ -33,51 +43,80 @@ export async function POST(req, { params }) {
       );
     }
 
-    // Check if already requested
-    const existingRequest = await CampaignJoinRequest.findOne({
-      userId,
-      campaignId,
-    });
-
-    if (existingRequest) {
+    // Check if creator is already in the campaign
+    const alreadyJoined = campaign.creators.some(c => c.creatorId.toString() === userId);
+    if (alreadyJoined) {
       return Response.json(
-        { success: false, message: 'You have already requested to join this campaign' },
+        { success: false, message: 'You have already joined this campaign' },
         { status: 409 }
       );
     }
 
-    // Create join request
-    const joinRequest = await CampaignJoinRequest.create({
-      userId,
-      campaignId,
-      status: 'pending',
+    // Check max creators limit
+    if (campaign.maxClippers && campaign.creators.length >= campaign.maxClippers) {
+      return Response.json(
+        { success: false, message: 'This campaign has reached maximum creators' },
+        { status: 400 }
+      );
+    }
+
+    // Validate that at least one platform link is provided
+    if (!platformLinks || !Object.values(platformLinks).some(link => link?.trim())) {
+      return Response.json(
+        { success: false, message: 'At least one platform link is required' },
+        { status: 400 }
+      );
+    }
+
+    // Add creator to campaign
+    campaign.creators.push({
+      creatorId: userId,
+      platformLinks: {
+        youtube: platformLinks.youtube || '',
+        tiktok: platformLinks.tiktok || '',
+        instagram: platformLinks.instagram || '',
+        twitter: platformLinks.twitter || '',
+        other: platformLinks.other || '',
+      },
+      earnings: {
+        total: 0,
+        pending: 0,
+        paid: 0,
+      },
+      joinedAt: new Date(),
     });
 
-    // Notify admin (creator) about new join request
+    await campaign.save();
+
+    // Notify brand about new creator joining
     await createNotification(
       campaign.createdBy,
-      'New Join Request 🎬',
-      `A new user is requesting to join "${campaign.title}"`,
+      'New Creator Joined! 🎬',
+      `${user.name} has joined "${campaign.title}"`,
       'info',
-      'new_join_request',
+      'creator_joined',
       {
-        entityType: 'joinRequest',
-        entityId: joinRequest._id,
+        entityType: 'campaign',
+        entityId: campaignId,
       }
     );
 
     return Response.json(
       {
         success: true,
-        message: 'Join request submitted successfully',
-        joinRequest,
+        message: 'Successfully joined campaign',
+        campaign,
       },
       { status: 201 }
     );
   } catch (error) {
     console.error('Campaign join error:', error);
     return Response.json(
-      { success: false, message: 'Failed to submit join request' },
+      { success: false, message: 'Failed to join campaign' },
+      { status: 500 }
+    );
+  }
+}
       { status: 500 }
     );
   }

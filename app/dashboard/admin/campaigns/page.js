@@ -10,7 +10,7 @@ import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import Skeleton from '@/components/ui/Skeleton';
-import { Plus, Search, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function CampaignsPage() {
@@ -25,11 +25,37 @@ export default function CampaignsPage() {
     title: '',
     description: '',
     payoutPer1000Views: '',
+    rules: '',
+    maxClippers: '',
+    startDate: '',
+    endDate: '',
   });
   const [editingId, setEditingId] = useState(null);
 
+  const [validationErrors, setValidationErrors] = useState({});
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.title || formData.title.trim().length < 3) {
+      errors.title = 'Title must be at least 3 characters';
+    }
+    if (!formData.description || formData.description.trim().length < 10) {
+      errors.description = 'Description must be at least 10 characters';
+    }
+    if (!formData.payoutPer1000Views || parseFloat(formData.payoutPer1000Views) <= 0) {
+      errors.payoutPer1000Views = 'Payout must be greater than 0';
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) return;
+
     try {
       const payload = {
         ...formData,
@@ -46,6 +72,7 @@ export default function CampaignsPage() {
       setIsModalOpen(false);
       setFormData({ title: '', description: '', payoutPer1000Views: '' });
       setEditingId(null);
+      setValidationErrors({});
     } catch (error) {
       console.error('Error:', error);
     }
@@ -62,14 +89,38 @@ export default function CampaignsPage() {
     c.title.toLowerCase().includes(search.toLowerCase())
   );
 
+  const totalCampaigns = campaigns.length;
+  const activeCampaigns = campaigns.filter(c => c.status === 'active').length;
+  const totalCreators = campaigns.reduce((sum, c) => sum + (c.creators?.length || 0), 0);
+
   return (
     <DashboardLayout>
       <div className="px-6 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-white">Campaigns</h1>
-            <p className="text-gray-400 mt-1">Manage all platform campaigns</p>
+            <h1 className="text-4xl font-bold text-white">Manage Campaigns</h1>
+            <p className="text-gray-400 mt-1">View and manage all platform campaigns</p>
           </div>
+          <Button onClick={() => setIsModalOpen(true)} className="gap-2">
+            <Plus size={20} /> New Campaign
+          </Button>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <Card>
+            <p className="text-gray-400 text-sm">Total Campaigns</p>
+            <p className="text-3xl font-bold text-white mt-2">{totalCampaigns}</p>
+          </Card>
+          <Card>
+            <p className="text-gray-400 text-sm">Active</p>
+            <p className="text-3xl font-bold text-cyan-400 mt-2">{activeCampaigns}</p>
+          </Card>
+          <Card>
+            <p className="text-gray-400 text-sm">Total Creators</p>
+            <p className="text-3xl font-bold text-green-400 mt-2">{totalCreators}</p>
+          </Card>
+        </div>
           <Button onClick={() => setIsModalOpen(true)} className="gap-2">
             <Plus size={20} /> New Campaign
           </Button>
@@ -108,13 +159,18 @@ export default function CampaignsPage() {
                       {campaign.title}
                     </h3>
                     <p className="text-sm text-gray-400 mt-1">
-                      {campaign.description}
+                      By {campaign.createdBy?.name || 'Unknown'} • {campaign.description}
                     </p>
                     <div className="flex gap-4 mt-3">
-                      <Badge variant="info">{campaign.clippers || 0} Clippers</Badge>
+                      <Badge variant="info" className="gap-1">
+                        <Users size={14} /> {campaign.creators?.length || 0} Creators
+                      </Badge>
                       <span className="text-sm text-gray-400">
                         ${campaign.payoutPer1000Views}/1K views
                       </span>
+                      <Badge variant={campaign.status === 'active' ? 'success' : 'default'}>
+                        {campaign.status}
+                      </Badge>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -149,32 +205,78 @@ export default function CampaignsPage() {
               title: '',
               description: '',
               payoutPer1000Views: '',
+              rules: '',
+              maxClippers: '',
+              startDate: '',
+              endDate: '',
             });
+            setValidationErrors({});
           }}
           title={editingId ? 'Edit Campaign' : 'Create Campaign'}
         >
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 max-h-96 overflow-y-auto">
+            <div>
+              <Input
+                label="Title"
+                value={formData.title}
+                onChange={(e) => {
+                  setFormData({ ...formData, title: e.target.value });
+                  if (validationErrors.title) setValidationErrors({ ...validationErrors, title: '' });
+                }}
+              />
+              {validationErrors.title && (
+                <p className="text-red-500 text-sm mt-1">{validationErrors.title}</p>
+              )}
+            </div>
+            <div>
+              <Input
+                label="Description"
+                value={formData.description}
+                onChange={(e) => {
+                  setFormData({ ...formData, description: e.target.value });
+                  if (validationErrors.description) setValidationErrors({ ...validationErrors, description: '' });
+                }}
+              />
+              {validationErrors.description && (
+                <p className="text-red-500 text-sm mt-1">{validationErrors.description}</p>
+              )}
+            </div>
+            <div>
+              <Input
+                label="Payout per 1000 Views ($)"
+                type="number"
+                value={formData.payoutPer1000Views}
+                onChange={(e) => {
+                  setFormData({ ...formData, payoutPer1000Views: e.target.value });
+                  if (validationErrors.payoutPer1000Views) setValidationErrors({ ...validationErrors, payoutPer1000Views: '' });
+                }}
+              />
+              {validationErrors.payoutPer1000Views && (
+                <p className="text-red-500 text-sm mt-1">{validationErrors.payoutPer1000Views}</p>
+              )}
+            </div>
             <Input
-              label="Title"
-              value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
+              label="Rules (Optional)"
+              value={formData.rules}
+              onChange={(e) => setFormData({ ...formData, rules: e.target.value })}
             />
             <Input
-              label="Description"
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-            />
-            <Input
-              label="Payout per 1000 Views ($)"
+              label="Max Creators (Optional)"
               type="number"
-              value={formData.payoutPer1000Views}
-              onChange={(e) =>
-                setFormData({ ...formData, payoutPer1000Views: e.target.value })
-              }
+              value={formData.maxClippers}
+              onChange={(e) => setFormData({ ...formData, maxClippers: e.target.value })}
+            />
+            <Input
+              label="Start Date"
+              type="date"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+            />
+            <Input
+              label="End Date"
+              type="date"
+              value={formData.endDate}
+              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
             />
             <div className="flex gap-2 justify-end pt-4">
               <Button

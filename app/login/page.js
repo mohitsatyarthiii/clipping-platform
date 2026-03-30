@@ -1,322 +1,214 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuthStore } from '@/lib/stores/authStore';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
-import { toast } from 'sonner';
-import Navbar from '@/components/Navbar';
+import PublicNavbar from '@/components/PublicNavbar';
 import { 
-  Mail, Lock, ArrowRight, Sparkles, Zap, TrendingUp, Users, 
-  Eye, EyeOff, Crown, Rocket, Award, Star, Shield, 
-  Video, Music, Heart, Share2, Globe, DollarSign 
+  ArrowRight, Zap, TrendingUp, Users, Rocket, Award, Shield, 
+  Globe, DollarSign, Lock, Sparkles
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, login } = useAuthStore();
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
-  const hasRedirectedRef = useRef(false);
-
-  useEffect(() => {
-    if (isAuthenticated && !hasRedirectedRef.current) {
-      hasRedirectedRef.current = true;
-      const userRole = useAuthStore.getState().user?.role;
-      const dashboardRoute = {
-        admin: '/dashboard/admin',
-        creator: '/dashboard/creator',
-        clipper: '/dashboard/clipper',
-      };
-      router.push(dashboardRoute[userRole] || '/dashboard/clipper');
-    }
-  }, [isAuthenticated]);
-
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.email) newErrors.email = 'Email is required';
-    if (!formData.password) newErrors.password = 'Password is required';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
-    const success = await login(formData.email, formData.password);
-    if (success) {
-      const userRole = useAuthStore.getState().user?.role;
-      const dashboardRoute = {
-        admin: '/dashboard/admin',
-        creator: '/dashboard/creator',
-        clipper: '/dashboard/clipper',
-      };
-      toast.success('Logged in successfully!');
-      router.push(dashboardRoute[userRole] || '/dashboard/clipper');
-    }
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
-  };
-
-  const features = [
-    { icon: Video, text: "4K Video Support", color: "purple" },
-    { icon: TrendingUp, text: "Viral Analytics", color: "cyan" },
-    { icon: DollarSign, text: "Instant Payouts", color: "pink" },
-    { icon: Shield, text: "Content Protection", color: "green" },
-  ];
-
-  const stats = [
-    { value: "50K+", label: "Active Creators", icon: Users },
-    { value: "$2.5M+", label: "Total Earnings", icon: DollarSign },
-    { value: "10M+", label: "Monthly Views", icon: TrendingUp },
-    { value: "99.9%", label: "Uptime", icon: Shield },
-  ];
 
   return (
     <>
-      <Navbar isAuthenticated={isAuthenticated} />
-      <div className="min-h-screen bg-black flex overflow-hidden">
-        {/* LEFT SIDE - CONTENT SECTION */}
-        <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-gray-900 via-black to-gray-900">
-          {/* Animated Background */}
-          <div className="absolute inset-0">
-            <div className="absolute top-20 left-20 w-72 h-72 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" />
-            <div className="absolute bottom-20 right-20 w-72 h-72 bg-cyan-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-600 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse delay-2000" />
-            
-          </div>
-
-          <div className="relative z-10 w-full flex flex-col justify-between p-12">
-            {/* Logo & Tagline */}
-            <div>
-           
-
-              {/* Hero Text */}
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="mb-12"
-              >
-                <h1 className="text-5xl font-bold mb-4">
-                  <span className="bg-gradient-to-r from-purple-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                    Welcome Back
-                  </span>
-                  <br />
-                  <span className="text-white">To The Future</span>
-                </h1>
-                <p className="text-gray-400 text-sm leading-relaxed">
-                  Join the revolution where creators and clippers unite to build the next generation of content monetization.
-                </p>
-              </motion.div>
-
-              {/* Stats Grid */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                className="grid grid-cols-2 gap-6 mb-12"
-              >
-                {stats.map((stat, idx) => (
-                  <div key={idx} className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                    <div className="flex items-center gap-2 mb-2">
-                      <stat.icon className="w-4 h-4 text-purple-400" />
-                      <span className="text-2xl font-bold text-white">{stat.value}</span>
-                    </div>
-                    <p className="text-xs text-gray-400">{stat.label}</p>
-                  </div>
-                ))}
-              </motion.div>
-
-              {/* Feature List */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.6 }}
-                className="space-y-3"
-              >
-                {features.map((feature, idx) => (
-                  <div key={idx} className="flex items-center gap-3 text-gray-300">
-                    <feature.icon className={`w-4 h-4 text-${feature.color}-400`} />
-                    <span className="text-sm">{feature.text}</span>
-                  </div>
-                ))}
-              </motion.div>
-            </div>
-
-            {/* Testimonial */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.8 }}
-              className="border-t border-white/10 pt-6 mt-auto"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex -space-x-2">
-                  {[1,2,3].map((i) => (
-                    <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 border-2 border-black flex items-center justify-center text-xs font-bold text-white">
-                      {String.fromCharCode(64 + i)}
-                    </div>
-                  ))}
-                </div>
-                <div className="flex">
-                  {[1,2,3,4,5].map((i) => (
-                    <Star key={i} className="w-3 h-3 fill-yellow-500 text-yellow-500" />
-                  ))}
-                </div>
-              </div>
-              <p className="text-gray-400 text-sm italic">
-                "Best platform for content creators! Made $5K in my first month!"
-              </p>
-              <p className="text-white text-xs mt-2 font-semibold">— Sarah Johnson, Creator</p>
-            </motion.div>
-          </div>
+      <PublicNavbar />
+      <div className="min-h-screen bg-black flex items-center justify-center p-6 relative overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-20 w-72 h-72 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" />
+          <div className="absolute bottom-20 right-20 w-72 h-72 bg-cyan-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-600 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse delay-2000" />
         </div>
 
-        {/* RIGHT SIDE - LOGIN FORM */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 relative">
-          {/* Background Effects */}
-          <div className="absolute inset-0 lg:hidden">
-            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-900/20 via-black to-cyan-900/20" />
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative z-10 w-full max-w-4xl"
+        >
+          {/* Header */}
+          <div className="text-center mb-12">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4 }}
+              className="inline-flex mb-4"
+            >
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-2xl flex items-center justify-center">
+                <Lock className="w-8 h-8 text-white" />
+              </div>
+            </motion.div>
+            <h1 className="text-5xl font-bold mb-4 text-white">
+              Welcome Back
+            </h1>
+            <p className="text-gray-400 text-lg max-w-xl mx-auto">
+              Sign in to access your dashboard, manage campaigns, and track your earnings.
+            </p>
           </div>
-          
-          <motion.div 
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            className="relative z-10 w-full max-w-md"
+
+          {/* Login Options */}
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            {/* Brand Login */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="group relative bg-gradient-to-br from-blue-900/30 to-purple-900/30 backdrop-blur-xl border border-blue-500/30 hover:border-blue-500/60 rounded-2xl p-8 cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/20"
+              onClick={() => router.push('/login/brand')}
+            >
+              <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-bl-3xl" />
+              
+              <div className="relative z-10">
+                <div className="mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4">
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white mb-2">Brand Sign In</h2>
+                  <p className="text-gray-400 text-sm mb-4">Access your brand dashboard to manage campaigns and creators.</p>
+                </div>
+
+                <ul className="space-y-2 mb-6 text-sm text-gray-300">
+                  <li className="flex items-center gap-2">
+                    <Rocket className="w-4 h-4 text-blue-400" />
+                    <span>Campaign management</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-blue-400" />
+                    <span>Performance tracking</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-blue-400" />
+                    <span>Creator network</span>
+                  </li>
+                </ul>
+
+                <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold py-2 rounded-lg flex items-center justify-center gap-2 group-hover:shadow-lg group-hover:shadow-blue-500/30 transition-all">
+                  Sign In as Brand
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </motion.div>
+
+            {/* Creator Login */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="group relative bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-xl border border-purple-500/30 hover:border-purple-500/60 rounded-2xl p-8 cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/20"
+              onClick={() => router.push('/login/creator')}
+            >
+              <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/10 rounded-bl-3xl" />
+              
+              <div className="relative z-10">
+                <div className="mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4">
+                    <Sparkles className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white mb-2">Creator Sign In</h2>
+                  <p className="text-gray-400 text-sm mb-4">Access your creator dashboard to join campaigns and track earnings.</p>
+                </div>
+
+                <ul className="space-y-2 mb-6 text-sm text-gray-300">
+                  <li className="flex items-center gap-2">
+                    <Award className="w-4 h-4 text-purple-400" />
+                    <span>Find opportunities</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-purple-400" />
+                    <span>Track earnings</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-purple-400" />
+                    <span>Grow your presence</span>
+                  </li>
+                </ul>
+
+                <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-2 rounded-lg flex items-center justify-center gap-2 group-hover:shadow-lg group-hover:shadow-purple-500/30 transition-all">
+                  Sign In as Creator
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </motion.div>
+
+            {/* Admin Login */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="group relative bg-gradient-to-br from-yellow-900/30 to-orange-900/30 backdrop-blur-xl border border-yellow-500/30 hover:border-yellow-500/60 rounded-2xl p-8 cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-yellow-500/20"
+              onClick={() => router.push('/login/admin')}
+            >
+              <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-500/10 rounded-bl-3xl" />
+              
+              <div className="relative z-10">
+                <div className="mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mb-4">
+                    <Shield className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white mb-2">Admin Sign In</h2>
+                  <p className="text-gray-400 text-sm mb-4">Access the admin dashboard to manage the platform and users.</p>
+                </div>
+
+                <ul className="space-y-2 mb-6 text-sm text-gray-300">
+                  <li className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-yellow-400" />
+                    <span>Manage users</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-yellow-400" />
+                    <span>Platform analytics</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-yellow-400" />
+                    <span>System monitoring</span>
+                  </li>
+                </ul>
+
+                <Button className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white font-semibold py-2 rounded-lg flex items-center justify-center gap-2 group-hover:shadow-lg group-hover:shadow-yellow-500/30 transition-all">
+                  Sign In as Admin
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Footer */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="text-center"
           >
-            {/* Card */}
-            <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl shadow-2xl overflow-hidden">
-              <div className="p-8">
-                {/* Header */}
-                <div className="text-center mb-8">
-                  <div className="inline-flex mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                      <Lock className="w-6 h-6 text-white" />
-                    </div>
-                  </div>
-                  <h2 className="text-2xl font-bold text-white mb-1">Sign In</h2>
-                  <p className="text-gray-400 text-sm">Access your creator dashboard</p>
-                </div>
+            <p className="text-gray-400 mb-4">
+              Don't have an account?{' '}
+              <Link href="/register" className="text-purple-400 hover:text-purple-300 font-semibold">
+                Sign up here
+              </Link>
+            </p>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-300 mb-1.5">Email Address</label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                      <Input
-                        type="email"
-                        name="email"
-                        placeholder="name@example.com"
-                        value={formData.email}
-                        onChange={handleChange}
-                        error={errors.email}
-                        className="pl-9 h-11 bg-gray-800/50 border-gray-700 focus:border-purple-500 rounded-lg text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-300 mb-1.5">Password</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        name="password"
-                        placeholder="••••••••"
-                        value={formData.password}
-                        onChange={handleChange}
-                        error={errors.password}
-                        className="pl-9 pr-10 h-11 bg-gray-800/50 border-gray-700 focus:border-purple-500 rounded-lg text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-700 bg-gray-800 text-purple-500" />
-                      <span className="text-xs text-gray-400">Remember me</span>
-                    </label>
-                    <Link href="/forgot-password" className="text-xs text-purple-400 hover:text-purple-300">
-                      Forgot password?
-                    </Link>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full h-11 text-sm font-semibold bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 rounded-lg"
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Signing in...
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2">
-                        Sign In
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </div>
-                    )}
-                  </Button>
-                </form>
-
-                {/* Divider */}
-                <div className="relative my-6">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-800"></div>
-                  </div>
-                  <div className="relative flex justify-center text-xs">
-                    <span className="px-3 bg-gray-900 text-gray-500">New here?</span>
-                  </div>
-                </div>
-
-                {/* Sign Up Link */}
-                <Link href="/register">
-                  <Button variant="outline" className="w-full h-11 text-sm border-gray-700 hover:border-purple-500">
-                    Create an account
-                  </Button>
-                </Link>
-
-                {/* Trust Badge */}
-                <div className="mt-6 flex items-center justify-center gap-3 text-xs text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <Shield className="w-3 h-3" />
-                    <span>Secure</span>
-                  </div>
-                  <div>•</div>
-                  <div className="flex items-center gap-1">
-                    <Zap className="w-3 h-3" />
-                    <span>Fast</span>
-                  </div>
-                  <div>•</div>
-                  <div className="flex items-center gap-1">
-                    <Globe className="w-3 h-3" />
-                    <span>Global</span>
-                  </div>
-                </div>
+            {/* Trust Badges */}
+            <div className="flex items-center justify-center gap-6 text-xs text-gray-500">
+              <div className="flex items-center gap-1">
+                <Shield className="w-3 h-3" />
+                <span>Secure & Private</span>
+              </div>
+              <div>•</div>
+              <div className="flex items-center gap-1">
+                <Zap className="w-3 h-3" />
+                <span>Fast Login</span>
+              </div>
+              <div>•</div>
+              <div className="flex items-center gap-1">
+                <Globe className="w-3 h-3" />
+                <span>Global Access</span>
               </div>
             </div>
           </motion.div>
-        </div>
+        </motion.div>
       </div>
     </>
   );

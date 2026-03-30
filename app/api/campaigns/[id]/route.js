@@ -3,7 +3,7 @@ import Campaign from '@/models/Campaign';
 import { verifyToken } from '@/lib/jwtService';
 import User from '@/models/User';
 
-// UPDATE campaign
+// UPDATE campaign (admin can update any, brands can update their own)
 export async function PUT(req, { params }) {
   await connectDB();
 
@@ -21,14 +21,14 @@ export async function PUT(req, { params }) {
     const { userId } = verifyToken(token);
     const user = await User.findById(userId);
 
-    if (!user || user.role !== 'admin') {
+    if (!user || !['admin', 'brand'].includes(user.role)) {
       return Response.json(
-        { success: false, message: 'Only admins can update campaigns' },
+        { success: false, message: 'Only admins and brands can update campaigns' },
         { status: 403 }
       );
     }
 
-    // Verify campaign exists and user created it
+    // Verify campaign exists and user has permission
     const campaign = await Campaign.findById(id);
     if (!campaign) {
       return Response.json(
@@ -37,7 +37,8 @@ export async function PUT(req, { params }) {
       );
     }
 
-    if (campaign.createdBy.toString() !== userId) {
+    // Brands can only update their own campaigns
+    if (user.role === 'brand' && campaign.createdBy.toString() !== userId) {
       return Response.json(
         { success: false, message: 'You can only update campaigns you created' },
         { status: 403 }
@@ -117,7 +118,7 @@ export async function PUT(req, { params }) {
   }
 }
 
-// DELETE campaign
+// DELETE campaign (admin can delete any, brands can delete their own)
 export async function DELETE(req, { params }) {
   await connectDB();
 
@@ -135,14 +136,14 @@ export async function DELETE(req, { params }) {
     const { userId } = verifyToken(token);
     const user = await User.findById(userId);
 
-    if (!user || user.role !== 'admin') {
+    if (!user || !['admin', 'brand'].includes(user.role)) {
       return Response.json(
-        { success: false, message: 'Only admins can delete campaigns' },
+        { success: false, message: 'Only admins and brands can delete campaigns' },
         { status: 403 }
       );
     }
 
-    // Verify campaign exists and user created it
+    // Verify campaign exists and user has permission
     const campaign = await Campaign.findById(id);
     if (!campaign) {
       return Response.json(
@@ -151,7 +152,8 @@ export async function DELETE(req, { params }) {
       );
     }
 
-    if (campaign.createdBy.toString() !== userId) {
+    // Brands can only delete their own campaigns
+    if (user.role === 'brand' && campaign.createdBy.toString() !== userId) {
       return Response.json(
         { success: false, message: 'You can only delete campaigns you created' },
         { status: 403 }

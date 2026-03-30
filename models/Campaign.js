@@ -30,6 +30,62 @@ const campaignSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    creators: [
+      {
+        creatorId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        platformLinks: {
+          youtube: String,
+          tiktok: String,
+          instagram: String,
+          twitter: String,
+          other: String,
+        },
+        stats: {
+          views: {
+            type: Number,
+            default: 0,
+          },
+          lastSyncedAt: {
+            type: Date,
+            default: null,
+          },
+          syncStatus: {
+            type: String,
+            enum: ['pending', 'syncing', 'completed', 'failed'],
+            default: 'pending',
+          },
+          syncError: {
+            type: String,
+            default: null,
+          },
+        },
+        earnings: {
+          total: {
+            type: Number,
+            default: 0,
+          },
+          pending: {
+            type: Number,
+            default: 0,
+          },
+          paid: {
+            type: Number,
+            default: 0,
+          },
+          lastCalculatedAt: {
+            type: Date,
+            default: null,
+          },
+        },
+        joinedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     status: {
       type: String,
       enum: ['active', 'inactive', 'paused', 'completed'],

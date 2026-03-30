@@ -13,18 +13,37 @@ export async function GET(req) {
     const limit = parseInt(searchParams.get('limit')) || 10;
     const status = searchParams.get('status');
     const sortBy = searchParams.get('sort') || '-createdAt';
+    const createdByMe = searchParams.get('createdByMe') === 'true';
 
     const skip = (page - 1) * limit;
+
+    // Get auth token if createdByMe filter is used
+    let userId = null;
+    if (createdByMe) {
+      const token = req.headers.get('authorization')?.split(' ')[1];
+      if (!token) {
+        return Response.json(
+          { success: false, message: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+      const { userId: authUserId } = verifyToken(token);
+      userId = authUserId;
+    }
 
     // Build filter
     const filter = {};
     if (status) filter.status = status;
+    if (createdByMe && userId) {
+      filter.createdBy = userId;
+    }
 
     // Use parallel queries for better performance
     const [campaigns, total] = await Promise.all([
       Campaign.find(filter)
         .select('-__v')
         .populate('createdBy', 'name email profileImage')
+        .populate('creators.creatorId', 'name email profileImage role')
         .sort(sortBy)
         .skip(skip)
         .limit(limit)
@@ -54,7 +73,7 @@ export async function GET(req) {
   }
 }
 
-// CREATE campaign (admin only)
+// CREATE campaign (admin and brand can create)
 export async function POST(req) {
   await connectDB();
 
@@ -70,9 +89,9 @@ export async function POST(req) {
     const { userId } = verifyToken(token);
     const user = await User.findById(userId);
 
-    if (!user || user.role !== 'admin') {
+    if (!user || !['admin', 'brand'].includes(user.role)) {
       return Response.json(
-        { success: false, message: 'Only admins can create campaigns' },
+        { success: false, message: 'Only admins and brands can create campaigns' },
         { status: 403 }
       );
     }
@@ -117,6 +136,7 @@ export async function POST(req) {
       banner: banner || null,
       createdBy: userId,
       status: 'active',
+      creators: [],
     });
 
     return Response.json(

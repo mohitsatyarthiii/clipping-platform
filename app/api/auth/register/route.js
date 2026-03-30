@@ -7,12 +7,21 @@ export async function POST(req) {
   await connectDB();
 
   try {
-    const { name, email, password, confirmPassword } = await req.json();
+    const { name, email, password, confirmPassword, role = 'creator' } = await req.json();
 
     // Validate input
     if (!name || !email || !password) {
       return Response.json(
         { success: false, message: 'Please provide all required fields' },
+        { status: 400 }
+      );
+    }
+
+    // Validate role
+    const validRoles = ['brand', 'creator'];
+    if (!validRoles.includes(role)) {
+      return Response.json(
+        { success: false, message: 'Invalid role provided' },
         { status: 400 }
       );
     }
@@ -47,12 +56,12 @@ export async function POST(req) {
       );
     }
 
-    // Create user
+    // Create user with specified role
     const user = await User.create({
       name: sanitizeInput(name),
       email: email.toLowerCase(),
       password,
-      role: 'clipper',
+      role,
     });
 
     // Generate token

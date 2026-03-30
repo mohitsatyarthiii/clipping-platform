@@ -27,8 +27,8 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['admin', 'creator', 'clipper'],
-      default: 'clipper',
+      enum: ['admin', 'brand', 'creator'],
+      default: 'creator',
     },
     profileImage: {
       type: String,
