@@ -1,7 +1,7 @@
-import connectDB from '@/lib/db';
-import User from '@/models/User';
-import { generateToken } from '@/lib/jwtService';
-import { validateEmail } from '@/lib/validators';
+import connectDB from '../../../../lib/db';
+import User from '../../../../models/User.js';
+import { generateToken } from '../../../../lib/jwtService.js';
+import { validateEmail } from '../../../../lib/validators';
 
 export async function POST(req) {
   await connectDB();
