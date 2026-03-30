@@ -31,10 +31,16 @@ export default function CampaignsPage() {
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...formData,
+        payoutPer1000Views: parseFloat(formData.payoutPer1000Views),
+        maxClippers: formData.maxClippers ? parseInt(formData.maxClippers) : null,
+      };
+      
       if (editingId) {
-        await put(`/campaigns/${editingId}`, formData);
+        await put(`/campaigns/${editingId}`, payload);
       } else {
-        await post('/campaigns', formData);
+        await post('/campaigns', payload);
       }
       refetch();
       setIsModalOpen(false);
