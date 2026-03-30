@@ -95,15 +95,26 @@ export async function POST(req) {
       );
     }
 
+    // Convert string values to proper types
+    const payoutAmount = parseFloat(payoutPer1000Views);
+    const maxClippersCount = maxClippers ? parseInt(maxClippers, 10) : null;
+
+    if (isNaN(payoutAmount) || payoutAmount <= 0) {
+      return Response.json(
+        { success: false, message: 'Payout must be a valid number greater than 0' },
+        { status: 400 }
+      );
+    }
+
     const campaign = await Campaign.create({
-      title,
-      description,
-      payoutPer1000Views,
-      rules,
-      maxClippers,
-      startDate,
-      endDate,
-      banner,
+      title: title.trim(),
+      description: description.trim(),
+      payoutPer1000Views: payoutAmount,
+      rules: rules ? rules.trim() : '',
+      maxClippers: maxClippersCount,
+      startDate: startDate ? new Date(startDate) : new Date(),
+      endDate: endDate ? new Date(endDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      banner: banner || null,
       createdBy: userId,
       status: 'active',
     });
@@ -118,6 +129,18 @@ export async function POST(req) {
     );
   } catch (error) {
     console.error('Create campaign error:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors)
+        .map((err) => err.message)
+        .join(', ');
+      return Response.json(
+        { success: false, message: `Validation error: ${messages}` },
+        { status: 400 }
+      );
+    }
+
     return Response.json(
       { success: false, message: 'Failed to create campaign' },
       { status: 500 }
