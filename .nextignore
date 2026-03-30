@@ -1,0 +1,2 @@
+# Ignore server files from being bundled
+lib/server/
