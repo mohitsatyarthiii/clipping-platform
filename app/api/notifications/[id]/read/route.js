@@ -1,7 +1,7 @@
 import connectDB from '@/lib/db';
 import Notification from '@/models/Notification';
 import { verifyToken } from '@/lib/jwtService';
-import { markAsRead, markAllAsRead } from '@/lib/notificationService';
+import { markAsRead, markAllAsRead } from '@/lib/server/services/notificationService';
 
 export async function PUT(req, { params }) {
   await connectDB();

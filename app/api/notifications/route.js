@@ -1,7 +1,7 @@
 import connectDB from '@/lib/db';
 import Notification from '@/models/Notification';
 import { verifyToken } from '@/lib/jwtService';
-import { getUserNotifications, getUnreadCount } from '@/lib/notificationService';
+import { getUserNotifications, getUnreadCount } from '@/lib/server/services/notificationService';
 
 export async function GET(req) {
   await connectDB();

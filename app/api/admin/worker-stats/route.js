@@ -1,4 +1,4 @@
-import { getWorker } from '@/lib/workers/youtubeWorker';
+import { getWorker } from '@/lib/server/workers/youtubeWorker';
 import { verifyToken } from '@/lib/jwtService';
 import User from '@/models/User';
 import connectDB from '@/lib/db';

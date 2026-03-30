@@ -5,8 +5,8 @@ import User from '@/models/User';
 import {
   createNotification,
   notificationTemplates,
-} from '@/lib/notificationService';
-import { updateUserEarnings, updateSubmissionEarnings } from '@/lib/earningsService';
+} from '@/lib/server/services/notificationService';
+import { updateUserEarnings, updateSubmissionEarnings } from '@/lib/server/services/earningsService';
 
 export async function PUT(req, { params }) {
   await connectDB();

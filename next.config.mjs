@@ -33,61 +33,6 @@ const nextConfig = {
     ],
   },
 
-  // Webpack configuration to ignore server-only modules on client
-  webpack: (config, { isServer, webpack }) => {
-    // Only apply to client-side builds
-    if (!isServer) {
-      // Mock server-only modules on client
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        'mongodb': false,
-        'mongoose': false,
-        'mongodb-client-encryption': false,
-        'bson-ext': false,
-        'kerberos': false,
-        '@mongodb-js/zstd': false,
-        'aws4': false,
-        'snappy': false,
-        'mongodb-client-encryption': false,
-        'snappy': false,
-        'kerberos': false,
-        '@mongodb-js/saslprep': false,
-      };
-
-      // Add fallback for Node.js core modules
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-        dns: false,
-        path: false,
-        crypto: false,
-        stream: false,
-        http: false,
-        https: false,
-        os: false,
-        zlib: false,
-        child_process: false,
-        'mongodb-client-encryption': false,
-      };
-
-      // Ignore server-only files from being bundled
-      config.plugins.push(
-        new webpack.IgnorePlugin({
-          resourceRegExp: /^\.\/lib\/workers\/.*$/,
-          contextRegExp: /.*/,
-        }),
-        new webpack.IgnorePlugin({
-          resourceRegExp: /^\.\/lib\/services\/.*Service\.js$/,
-          contextRegExp: /.*/,
-        })
-      );
-    }
-
-    return config;
-  },
-
   // Headers for better caching
   async headers() {
     return [

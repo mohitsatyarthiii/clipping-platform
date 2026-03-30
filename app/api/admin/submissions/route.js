@@ -5,8 +5,8 @@ import User from '@/models/User';
 import {
   createNotification,
   notificationTemplates,
-} from '@/lib/notificationService';
-import { approveAndProcessEarnings } from '@/lib/earningsService';
+} from '@/lib/server/services/notificationService';
+import { approveAndProcessEarnings } from '@/lib/server/services/earningsService';
 
 // GET all submissions (admin)
 export async function GET(req) {

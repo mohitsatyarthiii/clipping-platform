@@ -7,7 +7,7 @@ import {
   validateYoutubeUrl,
   extractYoutubeVideoId,
 } from '@/lib/validators';
-import { getVideoDetails } from '@/lib/youtubeService';
+import { getVideoDetails } from '@/lib/server/services/youtubeService';
 
 export async function POST(req) {
   await connectDB();

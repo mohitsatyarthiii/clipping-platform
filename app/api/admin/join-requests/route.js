@@ -6,7 +6,7 @@ import User from '@/models/User';
 import {
   createNotification,
   notificationTemplates,
-} from '@/lib/notificationService';
+} from '@/lib/server/services/notificationService';
 
 // GET all join requests (admin)
 export async function GET(req) {

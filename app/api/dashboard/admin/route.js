@@ -4,7 +4,7 @@ import Campaign from '@/models/Campaign';
 import Submission from '@/models/Submission';
 import CampaignJoinRequest from '@/models/CampaignJoinRequest';
 import { verifyToken } from '@/lib/jwtService';
-import { getEarningsStats } from '@/lib/earningsService';
+import { getEarningsStats } from '@/lib/server/services/earningsService';
 
 export async function GET(req) {
   await connectDB();

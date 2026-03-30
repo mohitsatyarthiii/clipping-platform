@@ -6,11 +6,11 @@ import { verifyToken } from '@/lib/jwtService';
 import { extractYoutubeVideoId, validateYoutubeUrl } from '@/lib/validators';
 import {
   checkDuplicateSubmission,
-} from '@/lib/duplicateService';
+} from '@/lib/server/services/duplicateService';
 import {
   createNotification,
   notificationTemplates,
-} from '@/lib/notificationService';
+} from '@/lib/server/services/notificationService';
 
 export async function POST(req) {
   await connectDB();
