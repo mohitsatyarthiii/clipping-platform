@@ -12,7 +12,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import Skeleton from '@/components/ui/Skeleton';
 import Tabs from '@/components/ui/Tabs';
-import { Plus, Search, ExternalLink, Youtube, TrendingUp, DollarSign, Users, Video } from 'lucide-react';
+import { Plus, Search, ExternalLink, Play, TrendingUp, DollarSign, Users, Video } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -214,7 +214,7 @@ export default function CreatorCampaignsPage() {
                         <div className="space-y-1">
                           {campaign.platformLinks.youtube && (
                             <a href={campaign.platformLinks.youtube} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 text-xs">
-                              <Youtube size={14} /> YouTube
+                              <Play size={14} /> YouTube
                             </a>
                           )}
                           {campaign.platformLinks.tiktok && (

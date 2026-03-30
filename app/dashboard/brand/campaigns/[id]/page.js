@@ -8,7 +8,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Skeleton from '@/components/ui/Skeleton';
-import { ArrowLeft, TrendingUp, Users, DollarSign, Eye, Award, Youtube, TikTok } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Users, DollarSign, Eye, Award, Play, Music } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function CampaignStatsPage() {

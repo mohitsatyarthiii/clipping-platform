@@ -121,10 +121,6 @@ export default function CampaignsPage() {
             <p className="text-3xl font-bold text-green-400 mt-2">{totalCreators}</p>
           </Card>
         </div>
-          <Button onClick={() => setIsModalOpen(true)} className="gap-2">
-            <Plus size={20} /> New Campaign
-          </Button>
-        </div>
 
         {/* Search */}
         <div className="mb-6">

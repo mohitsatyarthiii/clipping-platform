@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { verifyToken } from '@/middlewares/auth';
+import connectDB from '@/lib/db';
+import { verifyToken } from '@/lib/jwtService';
 import Campaign from '@/models/Campaign';
 import { getCreatorCampaignEarnings } from '@/lib/server/services/earningsService';
 
@@ -11,7 +10,7 @@ import { getCreatorCampaignEarnings } from '@/lib/server/services/earningsServic
  */
 export async function GET(request) {
   try {
-    await connectDB();
+    const db = await connectDB();
 
     // Verify authentication
     const token = request.headers.get('authorization')?.replace('Bearer ', '');

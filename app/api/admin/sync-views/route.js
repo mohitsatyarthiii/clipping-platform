@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
-import { authenticate } from '@/middlewares/auth';
-import { syncAllCampaignViews, syncCreatorViews } from '@/lib/server/workers/youtubeSyncWorker';
+import connectDB from '@/lib/db';
+import { verifyToken } from '@/lib/jwtService';
+import { syncAllCampaignViews, syncCampaignViews } from '@/lib/server/workers/youtubeSyncWorker';
+import User from '@/models/User';
 
 /**
  * POST /api/admin/sync-views
@@ -9,9 +10,21 @@ import { syncAllCampaignViews, syncCreatorViews } from '@/lib/server/workers/you
  */
 export async function POST(request) {
   try {
-    const authResult = await authenticate(request, 'admin');
-    if (!authResult.valid) {
-      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    await connectDB();
+
+    const token = request.headers.get('authorization')?.split(' ')[1];
+    if (!token) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return Response.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const user = await User.findById(decoded.userId);
+    if (!user || user.role !== 'admin') {
+      return Response.json({ error: 'Admin access required' }, { status: 403 });
     }
 
     // Parse request body to check if specific campaign is requested
@@ -21,48 +34,21 @@ export async function POST(request) {
     let result;
 
     if (campaignId) {
-      // Sync specific campaign
-      const { syncAllCampaignViews: syncCampaign } = await import('@/lib/server/workers/youtubeSyncWorker');
-      result = await syncCampaign(campaignId);
+      result = await syncCampaignViews(campaignId);
     } else {
-      // Sync all campaigns
       result = await syncAllCampaignViews();
     }
 
-    return NextResponse.json({
+    return Response.json({
       success: result.success !== false,
       message: campaignId ? 'Campaign view sync completed' : 'All campaigns synced',
       data: result,
     });
   } catch (error) {
     console.error('[Sync Views API] Error:', error);
-    return NextResponse.json(
+    return Response.json(
       { error: error.message || 'Sync failed' },
       { status: 500 }
     );
-  }
-}
-
-/**
- * GET /api/admin/sync-views
- * Get last sync status and history
- */
-export async function GET(request) {
-  try {
-    const authResult = await authenticate(request, 'admin');
-    if (!authResult.valid) {
-      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
-    }
-
-    // This would require tracking sync history in DB
-    // For now, return basic status
-    return NextResponse.json({
-      message: 'Sync status endpoint - tracking to be implemented',
-      lastSync: null,
-      status: 'ready',
-    });
-  } catch (error) {
-    console.error('[Sync Views API] Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

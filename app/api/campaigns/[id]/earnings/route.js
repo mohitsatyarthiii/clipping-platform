@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { verifyToken } from '@/middlewares/auth';
+import connectDB from '@/lib/db';
+import { verifyToken } from '@/lib/jwtService';
 import Campaign from '@/models/Campaign';
 import { getCampaignCreatorsEarnings } from '@/lib/server/services/earningsService';
 
@@ -11,7 +10,7 @@ import { getCampaignCreatorsEarnings } from '@/lib/server/services/earningsServi
  */
 export async function GET(request, { params }) {
   try {
-    await connectDB();
+    const db = await connectDB();
 
     const campaignId = params.id;
 
