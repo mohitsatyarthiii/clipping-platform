@@ -2,6 +2,7 @@ import connectDB from '@/lib/db';
 import Campaign from '@/models/Campaign';
 import { verifyToken } from '@/lib/jwtService';
 import User from '@/models/User';
+import mongoose from 'mongoose';
 
 // GET campaign by ID
 export async function GET(req, { params }) {
@@ -10,30 +11,41 @@ export async function GET(req, { params }) {
   try {
     const { id } = params;
 
+    // Validate MongoDB ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return Response.json(
+        { success: false, message: 'Invalid campaign ID format' },
+        { status: 400 }
+      );
+    }
+
     const campaign = await Campaign.findById(id)
       .select('-__v')
       .populate('createdBy', 'name email profileImage')
-      .populate('creators.creatorId', 'name email profileImage role')
-      .lean();
+      .populate('creators.creatorId', 'name email profileImage role');
 
     if (!campaign) {
+      console.warn(`Campaign not found for ID: ${id}`);
       return Response.json(
         { success: false, message: 'Campaign not found' },
         { status: 404 }
       );
     }
 
+    // Convert to plain object if needed
+    const campaignData = campaign.toObject ? campaign.toObject() : campaign;
+
     return Response.json(
       {
         success: true,
-        campaign: campaign,
+        campaign: campaignData,
       },
       { status: 200 }
     );
   } catch (error) {
     console.error('Get campaign error:', error);
     return Response.json(
-      { success: false, message: 'Failed to fetch campaign' },
+      { success: false, message: 'Failed to fetch campaign', error: error.message },
       { status: 500 }
     );
   }
