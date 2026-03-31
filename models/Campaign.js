@@ -43,6 +43,19 @@ const campaignSchema = new mongoose.Schema(
           twitter: String,
           other: String,
         },
+        status: {
+          type: String,
+          enum: ['active', 'banned', 'suspended'],
+          default: 'active',
+        },
+        bannedAt: {
+          type: Date,
+          default: null,
+        },
+        bannedReason: {
+          type: String,
+          default: '',
+        },
         stats: {
           views: {
             type: Number,

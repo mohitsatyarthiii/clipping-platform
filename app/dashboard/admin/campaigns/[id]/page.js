@@ -11,12 +11,12 @@ import Badge from '@/components/ui/Badge';
 import Skeleton from '@/components/ui/Skeleton';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
-import { ArrowLeft, TrendingUp, Users, DollarSign, Eye, Award, Play, Music, Edit2, Trash2, Ban, RotateCcw } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Users, DollarSign, Eye, Award, Edit2, Trash2, Ban, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
-export default function CampaignStatsPage() {
-  useProtectedRoute('brand');
+export default function AdminCampaignDetailsPage() {
+  useProtectedRoute('admin');
   const params = useParams();
   const router = useRouter();
   const campaignId = params.id;
@@ -162,6 +162,9 @@ export default function CampaignStatsPage() {
   // Sort creators by views (top creators)
   const topCreators = [...activeCreators].sort((a, b) => (b.stats?.views || 0) - (a.stats?.views || 0));
 
+  // Get brand info
+  const brandName = campaignData.createdBy?.name || 'Unknown Brand';
+
   const stats = [
     {
       label: 'Total Creators',
@@ -204,7 +207,10 @@ export default function CampaignStatsPage() {
           </Button>
           <div className="flex-1">
             <h1 className="text-4xl font-bold text-white">{campaignData.title}</h1>
-            <p className="text-gray-400 mt-1">{campaignData.description}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <p className="text-gray-400">By <span className="text-cyan-400 font-semibold">{brandName}</span></p>
+              <p className="text-gray-400 mt-1">{campaignData.description}</p>
+            </div>
           </div>
           <Badge variant={campaignData.status === 'active' ? 'success' : 'default'}>
             {campaignData.status}

@@ -54,6 +54,15 @@ const Sidebar = ({ collapsed = false }) => {
     },
   ];
 
+  const brandMenuItems = [
+    { href: '/dashboard/brand', icon: LayoutDashboard, label: 'Dashboard' },
+    {
+      href: '/dashboard/brand/campaigns',
+      icon: FileText,
+      label: 'Campaigns',
+    },
+  ];
+
   const clipperMenuItems = [
     { href: '/dashboard/clipper', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/dashboard/clipper/campaigns', icon: FileText, label: 'Campaigns' },
@@ -73,6 +82,7 @@ const Sidebar = ({ collapsed = false }) => {
   let menuItems = [];
   if (user?.role === 'admin') menuItems = adminMenuItems;
   else if (user?.role === 'creator') menuItems = creatorMenuItems;
+  else if (user?.role === 'brand') menuItems = brandMenuItems;
   else if (user?.role === 'clipper') menuItems = clipperMenuItems;
 
   const handleLogout = () => {
