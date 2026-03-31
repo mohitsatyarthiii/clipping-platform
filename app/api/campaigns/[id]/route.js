@@ -3,6 +3,42 @@ import Campaign from '@/models/Campaign';
 import { verifyToken } from '@/lib/jwtService';
 import User from '@/models/User';
 
+// GET campaign by ID
+export async function GET(req, { params }) {
+  await connectDB();
+
+  try {
+    const { id } = params;
+
+    const campaign = await Campaign.findById(id)
+      .select('-__v')
+      .populate('createdBy', 'name email profileImage')
+      .populate('creators.creatorId', 'name email profileImage role')
+      .lean();
+
+    if (!campaign) {
+      return Response.json(
+        { success: false, message: 'Campaign not found' },
+        { status: 404 }
+      );
+    }
+
+    return Response.json(
+      {
+        success: true,
+        campaign: campaign,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Get campaign error:', error);
+    return Response.json(
+      { success: false, message: 'Failed to fetch campaign' },
+      { status: 500 }
+    );
+  }
+}
+
 // UPDATE campaign (admin can update any, brands can update their own)
 export async function PUT(req, { params }) {
   await connectDB();

@@ -60,7 +60,12 @@ export async function PUT(req, { params }) {
     const { platformLinks, status, bannedReason, action } = await req.json();
 
     // Handle different actions
-    if (action === 'update-links' && platformLinks) {
+    if (action === 'remove') {
+      // Remove creator from campaign entirely
+      campaign.creators = campaign.creators.filter(
+        (c) => c.creatorId?.toString() !== creatorId
+      );
+    } else if (action === 'update-links' && platformLinks) {
       // Update platform links
       campaign.creators[creatorIndex].platformLinks = {
         youtube: platformLinks.youtube || campaign.creators[creatorIndex].platformLinks?.youtube,

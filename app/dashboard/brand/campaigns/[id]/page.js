@@ -38,7 +38,7 @@ export default function CampaignStatsPage() {
   });
 
   const handleEditLinks = (creator) => {
-    setEditingCreatorId(creator._id || creator.creatorId?._id);
+    setEditingCreatorId(creator.creatorId?._id);
     setLinksFormData({
       youtube: creator.platformLinks?.youtube || '',
       tiktok: creator.platformLinks?.tiktok || '',
@@ -107,7 +107,9 @@ export default function CampaignStatsPage() {
     if (confirm('Are you sure you want to remove this creator from the campaign?')) {
       try {
         setIsSubmitting(true);
-        await put(`/campaigns/${campaignId}/creators/${creatorId}`, {});
+        await put(`/campaigns/${campaignId}/creators/${creatorId}`, {
+          action: 'remove',
+        });
         toast.success('Creator removed successfully');
         refetch();
       } catch (error) {
@@ -335,7 +337,7 @@ export default function CampaignStatsPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => {
-                                  setEditingCreatorId(creator._id || creator.creatorId?._id);
+                                  setEditingCreatorId(creator.creatorId?._id);
                                   setShowBanModal(true);
                                 }}
                                 className="gap-1 text-red-400 hover:text-red-300"
@@ -345,7 +347,7 @@ export default function CampaignStatsPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleRemoveCreator(creator._id || creator.creatorId?._id)}
+                                onClick={() => handleRemoveCreator(creator.creatorId?._id)}
                                 className="gap-1 text-orange-400 hover:text-orange-300"
                               >
                                 <Trash2 size={14} />
@@ -447,7 +449,7 @@ export default function CampaignStatsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRestoreCreator(creator._id || creator.creatorId?._id)}
+                          onClick={() => handleRestoreCreator(creator.creatorId?._id)}
                           className="gap-1 text-green-400 hover:text-green-300"
                         >
                           <RotateCcw size={14} /> Restore
