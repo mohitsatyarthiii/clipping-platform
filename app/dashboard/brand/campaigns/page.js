@@ -11,18 +11,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Badge from '@/components/ui/Badge';
 import Skeleton from '@/components/ui/Skeleton';
-import { 
-  Search, 
-  Plus, 
-  Eye, 
-  Edit2, 
-  Trash2, 
-  Users, 
-  DollarSign,
-  Calendar,
-  ArrowRight,
-  AlertCircle
-} from 'lucide-react';
+import { Search, Plus, Eye, Trash2, Users, DollarSign, Calendar, ArrowRight, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 

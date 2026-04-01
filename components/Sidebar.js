@@ -92,29 +92,7 @@ const Sidebar = ({ collapsed = false }) => {
         },
       ],
     },
-    {
-      section: 'Analytics & Reports',
-      items: [
-        { 
-          href: '/dashboard/brand/analytics', 
-          icon: BarChart3, 
-          label: 'Analytics',
-          description: 'Performance metrics'
-        },
-        { 
-          href: '/dashboard/brand/earnings', 
-          icon: DollarSign, 
-          label: 'Earnings',
-          description: 'Revenue & payouts'
-        },
-        { 
-          href: '/dashboard/brand/creators', 
-          icon: Users, 
-          label: 'Creators',
-          description: 'Your creator network'
-        },
-      ],
-    },
+   
     {
       section: 'Settings',
       items: [

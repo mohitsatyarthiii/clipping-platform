@@ -10,7 +10,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
-import { ArrowLeft, Plus, Trash2, Globe, Video, Music, FileText, Image, Link2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Globe, Video, Music, FileText, Image } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CreateCampaignPage() {
@@ -137,7 +137,7 @@ export default function CreateCampaignPage() {
             onClick={() => router.back()}
             className="gap-2 mb-4"
           >
-            <ArrowLeft size={16} /> Back
+            <ArrowLeft size={16} /> Back to Campaigns
           </Button>
           <h1 className="text-4xl font-bold text-white">Create New Campaign</h1>
           <p className="text-gray-400 mt-2">Set up a new campaign to work with creators</p>
