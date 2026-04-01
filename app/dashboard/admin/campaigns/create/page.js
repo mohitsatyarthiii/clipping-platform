@@ -10,7 +10,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
-import { ArrowLeft, Plus, Trash2, Globe, Video, Music, FileText, Image } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Globe, Video, Music, FileText, Image, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CreateCampaignPage() {
