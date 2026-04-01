@@ -1,3 +1,4 @@
+// models/Campaign.js - Add this to your schema
 import mongoose from 'mongoose';
 
 const campaignSchema = new mongoose.Schema(
@@ -24,6 +25,29 @@ const campaignSchema = new mongoose.Schema(
       type: String,
       default: '',
       maxlength: [2000, 'Rules cannot exceed 2000 characters'],
+    },
+    // NEW: Source content links for creators to reference
+    sourceLinks: {
+      type: [{
+        title: {
+          type: String,
+          required: true,
+        },
+        url: {
+          type: String,
+          required: true,
+        },
+        description: {
+          type: String,
+          default: '',
+        },
+        type: {
+          type: String,
+          enum: ['video', 'audio', 'document', 'image', 'other'],
+          default: 'other',
+        },
+      }],
+      default: [],
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -110,11 +134,11 @@ const campaignSchema = new mongoose.Schema(
     },
     endDate: {
       type: Date,
-      default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     },
     maxClippers: {
       type: Number,
-      default: null, // null means unlimited
+      default: null,
     },
     currentClippers: {
       type: Number,

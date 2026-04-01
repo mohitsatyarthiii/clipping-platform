@@ -1,3 +1,4 @@
+// app/dashboard/admin/campaigns/create/page.js (or brand/campaigns/create/page.js)
 'use client';
 
 import { useState } from 'react';
@@ -9,7 +10,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CreateCampaignPage() {
@@ -26,6 +27,10 @@ export default function CreateCampaignPage() {
     endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     status: 'active',
   });
+
+  const [sourceLinks, setSourceLinks] = useState([
+    { title: '', url: '', description: '', type: 'other' }
+  ]);
 
   const [errors, setErrors] = useState({});
 
@@ -45,6 +50,16 @@ export default function CreateCampaignPage() {
       newErrors.endDate = 'End date must be after start date';
     }
 
+    // Validate source links
+    sourceLinks.forEach((link, index) => {
+      if (link.title && !link.url) {
+        newErrors[`sourceLink_${index}`] = 'URL is required when title is provided';
+      }
+      if (link.url && !link.title) {
+        newErrors[`sourceLink_${index}`] = 'Title is required when URL is provided';
+      }
+    });
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -57,6 +72,32 @@ export default function CreateCampaignPage() {
     }
   };
 
+  const handleSourceLinkChange = (index, field, value) => {
+    const updatedLinks = [...sourceLinks];
+    updatedLinks[index][field] = value;
+    setSourceLinks(updatedLinks);
+    
+    // Clear error for this link
+    if (errors[`sourceLink_${index}`]) {
+      const newErrors = { ...errors };
+      delete newErrors[`sourceLink_${index}`];
+      setErrors(newErrors);
+    }
+  };
+
+  const addSourceLink = () => {
+    setSourceLinks([...sourceLinks, { title: '', url: '', description: '', type: 'other' }]);
+  };
+
+  const removeSourceLink = (index) => {
+    if (sourceLinks.length > 1) {
+      const updatedLinks = sourceLinks.filter((_, i) => i !== index);
+      setSourceLinks(updatedLinks);
+    } else {
+      toast.error('At least one source link field is required');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -66,6 +107,9 @@ export default function CreateCampaignPage() {
     }
 
     try {
+      // Filter out empty source links
+      const filteredSourceLinks = sourceLinks.filter(link => link.title && link.url);
+
       const payload = {
         title: formData.title,
         description: formData.description,
@@ -74,6 +118,7 @@ export default function CreateCampaignPage() {
         startDate: new Date(formData.startDate),
         endDate: new Date(formData.endDate),
         status: formData.status,
+        sourceLinks: filteredSourceLinks,
       };
 
       const response = await post('/campaigns', payload);
@@ -83,6 +128,14 @@ export default function CreateCampaignPage() {
       toast.error(error.response?.data?.message || 'Failed to create campaign');
     }
   };
+
+  const linkTypes = [
+    { value: 'video', label: 'Video' },
+    { value: 'audio', label: 'Audio' },
+    { value: 'document', label: 'Document' },
+    { value: 'image', label: 'Image' },
+    { value: 'other', label: 'Other' },
+  ];
 
   return (
     <DashboardLayout>
@@ -134,6 +187,98 @@ export default function CreateCampaignPage() {
                 className={errors.description ? 'border-red-500' : ''}
               />
               {errors.description && <p className="text-red-400 text-sm mt-1">{errors.description}</p>}
+            </div>
+
+            {/* Source Links Section */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-medium text-gray-300">
+                  Source Content Links
+                </label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={addSourceLink}
+                  className="gap-1 text-cyan-400"
+                >
+                  <Plus size={16} /> Add Link
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mb-3">
+                Add reference links that creators can use for content inspiration
+              </p>
+              
+              {sourceLinks.map((link, index) => (
+                <div key={index} className="mb-4 p-4 border border-gray-700/30 rounded-lg">
+                  <div className="flex justify-between items-start mb-3">
+                    <h4 className="text-sm font-medium text-white">Link {index + 1}</h4>
+                    {sourceLinks.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeSourceLink(index)}
+                        className="text-red-400 hover:text-red-300 p-1"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Title *</label>
+                      <Input
+                        type="text"
+                        placeholder="e.g., Product Demo Video"
+                        value={link.title}
+                        onChange={(e) => handleSourceLinkChange(index, 'title', e.target.value)}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">URL *</label>
+                      <Input
+                        type="url"
+                        placeholder="https://example.com/video"
+                        value={link.url}
+                        onChange={(e) => handleSourceLinkChange(index, 'url', e.target.value)}
+                        className="text-sm"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Description</label>
+                      <Input
+                        type="text"
+                        placeholder="Brief description of this link"
+                        value={link.description}
+                        onChange={(e) => handleSourceLinkChange(index, 'description', e.target.value)}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Content Type</label>
+                      <select
+                        value={link.type}
+                        onChange={(e) => handleSourceLinkChange(index, 'type', e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                      >
+                        {linkTypes.map(type => (
+                          <option key={type.value} value={type.value}>{type.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {errors[`sourceLink_${index}`] && (
+                    <p className="text-red-400 text-xs mt-2">{errors[`sourceLink_${index}`]}</p>
+                  )}
+                </div>
+              ))}
             </div>
 
             {/* Payout and Dates */}

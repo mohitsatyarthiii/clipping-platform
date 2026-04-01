@@ -108,6 +108,9 @@ export async function GET(req) {
 }
 
 // CREATE campaign (admin and brand can create)
+// app/api/campaigns/route.js - Update POST handler
+// Add sourceLinks to the campaign creation payload
+
 export async function POST(req) {
   await connectDB();
 
@@ -138,6 +141,7 @@ export async function POST(req) {
       startDate,
       endDate,
       banner,
+      sourceLinks, // Add this
     } = await req.json();
 
     if (!title || !description || !payoutPer1000Views) {
@@ -165,6 +169,7 @@ export async function POST(req) {
       startDate: startDate ? new Date(startDate) : new Date(),
       endDate: endDate ? new Date(endDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       banner: banner || null,
+      sourceLinks: sourceLinks || [], // Add this line
       createdBy: userId,
       status: 'active',
       creators: [],
@@ -181,7 +186,6 @@ export async function POST(req) {
   } catch (error) {
     console.error('Create campaign error:', error);
     
-    // Handle validation errors
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors)
         .map((err) => err.message)
