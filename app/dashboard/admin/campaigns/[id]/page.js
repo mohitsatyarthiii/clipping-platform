@@ -95,7 +95,7 @@ export default function AdminCampaignDetailsPage() {
 
     try {
       setIsSubmitting(true);
-      await put(`/api/campaigns/${encodedCampaignId}/creators/${editingCreatorId}`, {
+      await put(`/campaigns/${encodedCampaignId}/creators/${editingCreatorId}`, {
         action: 'update-links',
         platformLinks: linksFormData,
       });
@@ -115,7 +115,7 @@ export default function AdminCampaignDetailsPage() {
 
     try {
       setIsSubmitting(true);
-      await put(`/api/campaigns/${encodedCampaignId}/creators/${editingCreatorId}`, {
+      await put(`/campaigns/${encodedCampaignId}/creators/${editingCreatorId}`, {
         action: 'ban',
         bannedReason: banReason,
       });
@@ -134,7 +134,7 @@ export default function AdminCampaignDetailsPage() {
   const handleRestoreCreator = async (creatorId) => {
     try {
       setIsSubmitting(true);
-      await put(`/api/campaigns/${encodedCampaignId}/creators/${creatorId}`, {
+      await put(`/campaigns/${encodedCampaignId}/creators/${creatorId}`, {
         action: 'restore',
       });
       toast.success('Creator restored successfully');
@@ -151,7 +151,7 @@ export default function AdminCampaignDetailsPage() {
     if (confirm('Are you sure you want to remove this creator from the campaign?')) {
       try {
         setIsSubmitting(true);
-        await put(`/api/campaigns/${encodedCampaignId}/creators/${creatorId}`, {
+        await put(`/campaigns/${encodedCampaignId}/creators/${creatorId}`, {
           action: 'remove',
         });
         toast.success('Creator removed successfully');
