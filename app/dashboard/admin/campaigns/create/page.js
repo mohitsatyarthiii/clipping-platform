@@ -1,4 +1,4 @@
-// app/dashboard/admin/campaigns/create/page.js (or brand/campaigns/create/page.js)
+// app/dashboard/admin/campaigns/create/page.js
 'use client';
 
 import { useState } from 'react';
@@ -10,7 +10,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
-import { ArrowLeft, Plus, Trash2, Link2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Globe, Video, Music, FileText, Image } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CreateCampaignPage() {
@@ -28,6 +28,7 @@ export default function CreateCampaignPage() {
     status: 'active',
   });
 
+  // Source links state
   const [sourceLinks, setSourceLinks] = useState([
     { title: '', url: '', description: '', type: 'other' }
   ]);
@@ -77,7 +78,6 @@ export default function CreateCampaignPage() {
     updatedLinks[index][field] = value;
     setSourceLinks(updatedLinks);
     
-    // Clear error for this link
     if (errors[`sourceLink_${index}`]) {
       const newErrors = { ...errors };
       delete newErrors[`sourceLink_${index}`];
@@ -121,20 +121,21 @@ export default function CreateCampaignPage() {
         sourceLinks: filteredSourceLinks,
       };
 
-      const response = await post('/campaigns', payload);
+      const response = await post('/api/campaigns', payload);
       toast.success('Campaign created successfully!');
       router.push('/dashboard/admin/campaigns');
     } catch (error) {
+      console.error('Create error:', error);
       toast.error(error.response?.data?.message || 'Failed to create campaign');
     }
   };
 
   const linkTypes = [
-    { value: 'video', label: 'Video' },
-    { value: 'audio', label: 'Audio' },
-    { value: 'document', label: 'Document' },
-    { value: 'image', label: 'Image' },
-    { value: 'other', label: 'Other' },
+    { value: 'video', label: 'Video', icon: Video, color: 'text-red-400' },
+    { value: 'audio', label: 'Audio', icon: Music, color: 'text-green-400' },
+    { value: 'document', label: 'Document', icon: FileText, color: 'text-blue-400' },
+    { value: 'image', label: 'Image', icon: Image, color: 'text-purple-400' },
+    { value: 'other', label: 'Other', icon: Globe, color: 'text-gray-400' },
   ];
 
   return (
@@ -189,7 +190,7 @@ export default function CreateCampaignPage() {
               {errors.description && <p className="text-red-400 text-sm mt-1">{errors.description}</p>}
             </div>
 
-            {/* Source Links Section */}
+            {/* Source Links Section - FORM ME HI ADD HOGA */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-sm font-medium text-gray-300">
@@ -202,17 +203,20 @@ export default function CreateCampaignPage() {
                   onClick={addSourceLink}
                   className="gap-1 text-cyan-400"
                 >
-                  <Plus size={16} /> Add Link
+                  <Plus size={16} /> Add More Links
                 </Button>
               </div>
-              <p className="text-xs text-gray-500 mb-3">
+              <p className="text-xs text-gray-500 mb-4">
                 Add reference links that creators can use for content inspiration
               </p>
               
               {sourceLinks.map((link, index) => (
-                <div key={index} className="mb-4 p-4 border border-gray-700/30 rounded-lg">
-                  <div className="flex justify-between items-start mb-3">
-                    <h4 className="text-sm font-medium text-white">Link {index + 1}</h4>
+                <div key={index} className="mb-6 p-5 border border-gray-700/30 rounded-lg bg-slate-900/50">
+                  <div className="flex justify-between items-start mb-4">
+                    <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                      <Link2 size={14} className="text-cyan-400" />
+                      Source Link {index + 1}
+                    </h4>
                     {sourceLinks.length > 1 && (
                       <Button
                         type="button"
@@ -226,46 +230,46 @@ export default function CreateCampaignPage() {
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">Title *</label>
+                      <label className="block text-xs text-gray-400 mb-1.5">Link Title *</label>
                       <Input
                         type="text"
                         placeholder="e.g., Product Demo Video"
                         value={link.title}
                         onChange={(e) => handleSourceLinkChange(index, 'title', e.target.value)}
-                        className="text-sm"
+                        className="text-sm bg-slate-800/50"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">URL *</label>
+                      <label className="block text-xs text-gray-400 mb-1.5">URL *</label>
                       <Input
                         type="url"
                         placeholder="https://example.com/video"
                         value={link.url}
                         onChange={(e) => handleSourceLinkChange(index, 'url', e.target.value)}
-                        className="text-sm"
+                        className="text-sm bg-slate-800/50"
                       />
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">Description</label>
+                      <label className="block text-xs text-gray-400 mb-1.5">Description (Optional)</label>
                       <Input
                         type="text"
                         placeholder="Brief description of this link"
                         value={link.description}
                         onChange={(e) => handleSourceLinkChange(index, 'description', e.target.value)}
-                        className="text-sm"
+                        className="text-sm bg-slate-800/50"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">Content Type</label>
+                      <label className="block text-xs text-gray-400 mb-1.5">Content Type</label>
                       <select
                         value={link.type}
                         onChange={(e) => handleSourceLinkChange(index, 'type', e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                       >
                         {linkTypes.map(type => (
                           <option key={type.value} value={type.value}>{type.label}</option>
@@ -275,7 +279,7 @@ export default function CreateCampaignPage() {
                   </div>
                   
                   {errors[`sourceLink_${index}`] && (
-                    <p className="text-red-400 text-xs mt-2">{errors[`sourceLink_${index}`]}</p>
+                    <p className="text-red-400 text-xs mt-3">{errors[`sourceLink_${index}`]}</p>
                   )}
                 </div>
               ))}

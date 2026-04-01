@@ -1,9 +1,10 @@
+// app/api/campaigns/route.js - Complete updated version
 import connectDB from '@/lib/db';
 import Campaign from '@/models/Campaign';
 import { verifyToken } from '@/lib/jwtService';
 import User from '@/models/User';
 
-// GET all campaigns - Open access for authenticated users
+// GET all campaigns
 export async function GET(req) {
   await connectDB();
 
@@ -18,7 +19,6 @@ export async function GET(req) {
 
     const skip = (page - 1) * limit;
 
-    // Get auth token - allow optional authentication
     let userId = null;
     let userRole = null;
     const authHeader = req.headers.get('authorization');
@@ -29,41 +29,33 @@ export async function GET(req) {
         const { userId: authUserId } = verifyToken(token);
         userId = authUserId;
         
-        // Get user role for filtering
         const user = await User.findById(userId);
         if (user) {
           userRole = user.role;
         }
       } catch (error) {
         console.log('Token verification failed:', error.message);
-        // Continue without user - will still show public campaigns
       }
     }
 
-    // Build filter
     const filter = {};
     
-    // If status is provided, filter by it
     if (status) {
       filter.status = status;
     } else {
-      // By default, show only active campaigns for non-admin/non-brand users
       if (userRole !== 'admin' && userRole !== 'brand' && !createdByMe && !joinedByMe) {
         filter.status = 'active';
       }
     }
     
-    // Filter by user's created campaigns
     if (createdByMe && userId) {
       filter.createdBy = userId;
     }
     
-    // Filter by campaigns user has joined
     if (joinedByMe && userId) {
       filter['creators.creatorId'] = userId;
     }
 
-    // Use parallel queries for better performance
     const [campaigns, total] = await Promise.all([
       Campaign.find(filter)
         .select('-__v')
@@ -76,7 +68,6 @@ export async function GET(req) {
       Campaign.countDocuments(filter),
     ]);
 
-    // Add join status for creators
     if (userId && userRole === 'creator') {
       campaigns.forEach(campaign => {
         campaign.hasJoined = campaign.creators?.some(
@@ -107,10 +98,7 @@ export async function GET(req) {
   }
 }
 
-// CREATE campaign (admin and brand can create)
-// app/api/campaigns/route.js - Update POST handler
-// Add sourceLinks to the campaign creation payload
-
+// CREATE campaign with source links
 export async function POST(req) {
   await connectDB();
 
@@ -141,7 +129,7 @@ export async function POST(req) {
       startDate,
       endDate,
       banner,
-      sourceLinks, // Add this
+      sourceLinks, // Add sourceLinks here
     } = await req.json();
 
     if (!title || !description || !payoutPer1000Views) {
@@ -151,7 +139,6 @@ export async function POST(req) {
       );
     }
 
-    // Convert string values to proper types
     const payoutAmount = parseFloat(payoutPer1000Views);
 
     if (isNaN(payoutAmount) || payoutAmount <= 0) {
@@ -169,7 +156,7 @@ export async function POST(req) {
       startDate: startDate ? new Date(startDate) : new Date(),
       endDate: endDate ? new Date(endDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       banner: banner || null,
-      sourceLinks: sourceLinks || [], // Add this line
+      sourceLinks: sourceLinks || [], // Save source links
       createdBy: userId,
       status: 'active',
       creators: [],
