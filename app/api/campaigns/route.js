@@ -3,7 +3,7 @@ import Campaign from '@/models/Campaign';
 import { verifyToken } from '@/lib/jwtService';
 import User from '@/models/User';
 
-// GET all campaigns
+// GET all campaigns - Open access for authenticated users
 export async function GET(req) {
   await connectDB();
 
@@ -18,26 +18,47 @@ export async function GET(req) {
 
     const skip = (page - 1) * limit;
 
-    // Get auth token if createdByMe or joinedByMe filter is used
+    // Get auth token - allow optional authentication
     let userId = null;
-    if (createdByMe || joinedByMe) {
-      const token = req.headers.get('authorization')?.split(' ')[1];
-      if (!token) {
-        return Response.json(
-          { success: false, message: 'Unauthorized' },
-          { status: 401 }
-        );
+    let userRole = null;
+    const authHeader = req.headers.get('authorization');
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.split(' ')[1];
+        const { userId: authUserId } = verifyToken(token);
+        userId = authUserId;
+        
+        // Get user role for filtering
+        const user = await User.findById(userId);
+        if (user) {
+          userRole = user.role;
+        }
+      } catch (error) {
+        console.log('Token verification failed:', error.message);
+        // Continue without user - will still show public campaigns
       }
-      const { userId: authUserId } = verifyToken(token);
-      userId = authUserId;
     }
 
     // Build filter
     const filter = {};
-    if (status) filter.status = status;
+    
+    // If status is provided, filter by it
+    if (status) {
+      filter.status = status;
+    } else {
+      // By default, show only active campaigns for non-admin/non-brand users
+      if (userRole !== 'admin' && userRole !== 'brand' && !createdByMe && !joinedByMe) {
+        filter.status = 'active';
+      }
+    }
+    
+    // Filter by user's created campaigns
     if (createdByMe && userId) {
       filter.createdBy = userId;
     }
+    
+    // Filter by campaigns user has joined
     if (joinedByMe && userId) {
       filter['creators.creatorId'] = userId;
     }
@@ -54,6 +75,15 @@ export async function GET(req) {
         .lean(),
       Campaign.countDocuments(filter),
     ]);
+
+    // Add join status for creators
+    if (userId && userRole === 'creator') {
+      campaigns.forEach(campaign => {
+        campaign.hasJoined = campaign.creators?.some(
+          creator => creator.creatorId?._id?.toString() === userId
+        );
+      });
+    }
 
     return Response.json(
       {

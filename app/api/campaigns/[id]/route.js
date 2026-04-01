@@ -1,41 +1,73 @@
+// app/api/campaigns/[id]/route.js
 import connectDB from '@/lib/db';
 import Campaign from '@/models/Campaign';
 import { verifyToken } from '@/lib/jwtService';
 import User from '@/models/User';
 import mongoose from 'mongoose';
+import { NextResponse } from 'next/server';
 
-// GET campaign by ID
+// GET campaign by ID - Open access for all authenticated users
 export async function GET(req, { params }) {
-  await connectDB();
-
   try {
+    await connectDB();
+    
     const { id } = params;
+    
+    console.log('Fetching campaign with ID:', id);
 
     // Validate MongoDB ObjectId format
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, message: 'Invalid campaign ID format' },
         { status: 400 }
       );
     }
 
+    // Get token for authentication (optional - to show user-specific data)
+    const authHeader = req.headers.get('authorization');
+    let userId = null;
+    let userRole = null;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.split(' ')[1];
+        const decoded = verifyToken(token);
+        userId = decoded.userId;
+        
+        const user = await User.findById(userId);
+        if (user) {
+          userRole = user.role;
+        }
+      } catch (error) {
+        console.log('Token verification failed:', error.message);
+      }
+    }
+
+    // Find campaign - no authentication required to view
     const campaign = await Campaign.findById(id)
       .select('-__v')
       .populate('createdBy', 'name email profileImage')
-      .populate('creators.creatorId', 'name email profileImage role');
+      .populate('creators.creatorId', 'name email profileImage role bio');
 
     if (!campaign) {
-      console.warn(`Campaign not found for ID: ${id}`);
-      return Response.json(
+      return NextResponse.json(
         { success: false, message: 'Campaign not found' },
         { status: 404 }
       );
     }
 
-    // Convert to plain object if needed
-    const campaignData = campaign.toObject ? campaign.toObject() : campaign;
+    // Convert to plain object
+    const campaignData = campaign.toObject();
 
-    return Response.json(
+    // For creators, show if they've already joined
+    if (userId && userRole === 'creator') {
+      const hasJoined = campaignData.creators?.some(
+        creator => creator.creatorId?._id?.toString() === userId
+      );
+      campaignData.hasJoined = hasJoined;
+    }
+
+    return NextResponse.json(
       {
         success: true,
         campaign: campaignData,
@@ -44,23 +76,23 @@ export async function GET(req, { params }) {
     );
   } catch (error) {
     console.error('Get campaign error:', error);
-    return Response.json(
+    return NextResponse.json(
       { success: false, message: 'Failed to fetch campaign', error: error.message },
       { status: 500 }
     );
   }
 }
 
-// UPDATE campaign (admin can update any, brands can update their own)
+// PUT - Update campaign or manage creators
 export async function PUT(req, { params }) {
-  await connectDB();
-
   try {
+    await connectDB();
+    
     const { id } = params;
     const token = req.headers.get('authorization')?.split(' ')[1];
 
     if (!token) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
@@ -69,26 +101,204 @@ export async function PUT(req, { params }) {
     const { userId } = verifyToken(token);
     const user = await User.findById(userId);
 
-    if (!user || !['admin', 'brand'].includes(user.role)) {
-      return Response.json(
-        { success: false, message: 'Only admins and brands can update campaigns' },
-        { status: 403 }
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'User not found' },
+        { status: 404 }
       );
     }
 
-    // Verify campaign exists and user has permission
+    // Check if campaign exists
     const campaign = await Campaign.findById(id);
     if (!campaign) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, message: 'Campaign not found' },
         { status: 404 }
       );
     }
 
-    // Brands can only update their own campaigns
-    if (user.role === 'brand' && campaign.createdBy.toString() !== userId) {
-      return Response.json(
-        { success: false, message: 'You can only update campaigns you created' },
+    const { action, ...updateData } = await req.json();
+
+    // Handle creator management actions (for admins and brands)
+    if (action) {
+      // Check permissions for creator management
+      if (user.role !== 'admin' && campaign.createdBy.toString() !== userId) {
+        return NextResponse.json(
+          { success: false, message: 'You don\'t have permission to manage creators in this campaign' },
+          { status: 403 }
+        );
+      }
+
+      const { creatorId } = updateData;
+
+      switch (action) {
+        case 'join':
+          // Allow creator to join campaign
+          if (user.role !== 'creator') {
+            return NextResponse.json(
+              { success: false, message: 'Only creators can join campaigns' },
+              { status: 403 }
+            );
+          }
+
+          // Check if already joined
+          const alreadyJoined = campaign.creators?.some(
+            c => c.creatorId?.toString() === userId
+          );
+
+          if (alreadyJoined) {
+            return NextResponse.json(
+              { success: false, message: 'You have already joined this campaign' },
+              { status: 400 }
+            );
+          }
+
+          // Add creator to campaign
+          campaign.creators.push({
+            creatorId: userId,
+            joinedAt: new Date(),
+            status: 'active',
+            stats: { views: 0, clicks: 0, conversions: 0 },
+            earnings: { total: 0, pending: 0, paid: 0 }
+          });
+
+          await campaign.save();
+          
+          return NextResponse.json(
+            { success: true, message: 'Successfully joined campaign' },
+            { status: 200 }
+          );
+
+        case 'leave':
+          // Allow creator to leave campaign
+          if (user.role !== 'creator') {
+            return NextResponse.json(
+              { success: false, message: 'Only creators can leave campaigns' },
+              { status: 403 }
+            );
+          }
+
+          // Check if creator is in campaign
+          const creatorIndex = campaign.creators.findIndex(
+            c => c.creatorId?.toString() === userId
+          );
+
+          if (creatorIndex === -1) {
+            return NextResponse.json(
+              { success: false, message: 'You are not part of this campaign' },
+              { status: 400 }
+            );
+          }
+
+          // Remove creator from campaign
+          campaign.creators.splice(creatorIndex, 1);
+          await campaign.save();
+          
+          return NextResponse.json(
+            { success: true, message: 'Successfully left campaign' },
+            { status: 200 }
+          );
+
+        case 'update-links':
+          // Update creator's platform links
+          const creatorToUpdate = campaign.creators.find(
+            c => c.creatorId?.toString() === creatorId
+          );
+
+          if (!creatorToUpdate) {
+            return NextResponse.json(
+              { success: false, message: 'Creator not found in campaign' },
+              { status: 404 }
+            );
+          }
+
+          creatorToUpdate.platformLinks = updateData.platformLinks;
+          await campaign.save();
+          
+          return NextResponse.json(
+            { success: true, message: 'Creator links updated successfully' },
+            { status: 200 }
+          );
+
+        case 'ban':
+          // Ban creator from campaign
+          const creatorToBan = campaign.creators.find(
+            c => c.creatorId?.toString() === creatorId
+          );
+
+          if (!creatorToBan) {
+            return NextResponse.json(
+              { success: false, message: 'Creator not found in campaign' },
+              { status: 404 }
+            );
+          }
+
+          creatorToBan.status = 'banned';
+          creatorToBan.bannedReason = updateData.bannedReason;
+          creatorToBan.bannedAt = new Date();
+          await campaign.save();
+          
+          return NextResponse.json(
+            { success: true, message: 'Creator banned successfully' },
+            { status: 200 }
+          );
+
+        case 'restore':
+          // Restore banned creator
+          const creatorToRestore = campaign.creators.find(
+            c => c.creatorId?.toString() === creatorId
+          );
+
+          if (!creatorToRestore) {
+            return NextResponse.json(
+              { success: false, message: 'Creator not found in campaign' },
+              { status: 404 }
+            );
+          }
+
+          creatorToRestore.status = 'active';
+          creatorToRestore.bannedReason = undefined;
+          creatorToRestore.bannedAt = undefined;
+          await campaign.save();
+          
+          return NextResponse.json(
+            { success: true, message: 'Creator restored successfully' },
+            { status: 200 }
+          );
+
+        case 'remove':
+          // Remove creator from campaign
+          const removeIndex = campaign.creators.findIndex(
+            c => c.creatorId?.toString() === creatorId
+          );
+
+          if (removeIndex === -1) {
+            return NextResponse.json(
+              { success: false, message: 'Creator not found in campaign' },
+              { status: 404 }
+            );
+          }
+
+          campaign.creators.splice(removeIndex, 1);
+          await campaign.save();
+          
+          return NextResponse.json(
+            { success: true, message: 'Creator removed successfully' },
+            { status: 200 }
+          );
+
+        default:
+          return NextResponse.json(
+            { success: false, message: 'Invalid action' },
+            { status: 400 }
+          );
+      }
+    }
+
+    // Handle campaign updates (admins and the campaign owner)
+    if (user.role !== 'admin' && campaign.createdBy.toString() !== userId) {
+      return NextResponse.json(
+        { success: false, message: 'You don\'t have permission to update this campaign' },
         { status: 403 }
       );
     }
@@ -101,78 +311,48 @@ export async function PUT(req, { params }) {
       startDate,
       endDate,
       banner,
-    } = await req.json();
+      status
+    } = updateData;
 
-    if (!title || !description || !payoutPer1000Views) {
-      return Response.json(
-        { success: false, message: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
+    // Update campaign fields
+    if (title) campaign.title = title.trim();
+    if (description) campaign.description = description.trim();
+    if (payoutPer1000Views) campaign.payoutPer1000Views = parseFloat(payoutPer1000Views);
+    if (rules !== undefined) campaign.rules = rules ? rules.trim() : '';
+    if (startDate) campaign.startDate = new Date(startDate);
+    if (endDate) campaign.endDate = new Date(endDate);
+    if (banner !== undefined) campaign.banner = banner;
+    if (status) campaign.status = status;
 
-    // Convert string values to proper types
-    const payoutAmount = parseFloat(payoutPer1000Views);
+    await campaign.save();
 
-    if (isNaN(payoutAmount) || payoutAmount <= 0) {
-      return Response.json(
-        { success: false, message: 'Payout must be a valid number greater than 0' },
-        { status: 400 }
-      );
-    }
-
-    const updatedCampaign = await Campaign.findByIdAndUpdate(
-      id,
-      {
-        title: title.trim(),
-        description: description.trim(),
-        payoutPer1000Views: payoutAmount,
-        rules: rules ? rules.trim() : '',
-        startDate: startDate ? new Date(startDate) : campaign.startDate,
-        endDate: endDate ? new Date(endDate) : campaign.endDate,
-        banner: banner || null,
-      },
-      { new: true, runValidators: true }
-    );
-
-    return Response.json(
+    return NextResponse.json(
       {
         success: true,
         message: 'Campaign updated successfully',
-        campaign: updatedCampaign,
+        campaign
       },
       { status: 200 }
     );
   } catch (error) {
     console.error('Update campaign error:', error);
-
-    // Handle validation errors
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors)
-        .map((err) => err.message)
-        .join(', ');
-      return Response.json(
-        { success: false, message: `Validation error: ${messages}` },
-        { status: 400 }
-      );
-    }
-
-    return Response.json(
-      { success: false, message: 'Failed to update campaign' },
+    return NextResponse.json(
+      { success: false, message: 'Failed to update campaign', error: error.message },
       { status: 500 }
     );
   }
 }
 
-// DELETE campaign (admin can delete any, brands can delete their own)
+// DELETE campaign
 export async function DELETE(req, { params }) {
-  await connectDB();
-
   try {
+    await connectDB();
+    
     const { id } = params;
     const token = req.headers.get('authorization')?.split(' ')[1];
 
     if (!token) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
@@ -182,16 +362,15 @@ export async function DELETE(req, { params }) {
     const user = await User.findById(userId);
 
     if (!user || !['admin', 'brand'].includes(user.role)) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, message: 'Only admins and brands can delete campaigns' },
         { status: 403 }
       );
     }
 
-    // Verify campaign exists and user has permission
     const campaign = await Campaign.findById(id);
     if (!campaign) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, message: 'Campaign not found' },
         { status: 404 }
       );
@@ -199,7 +378,7 @@ export async function DELETE(req, { params }) {
 
     // Brands can only delete their own campaigns
     if (user.role === 'brand' && campaign.createdBy.toString() !== userId) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, message: 'You can only delete campaigns you created' },
         { status: 403 }
       );
@@ -207,7 +386,7 @@ export async function DELETE(req, { params }) {
 
     await Campaign.findByIdAndDelete(id);
 
-    return Response.json(
+    return NextResponse.json(
       {
         success: true,
         message: 'Campaign deleted successfully',
@@ -216,7 +395,7 @@ export async function DELETE(req, { params }) {
     );
   } catch (error) {
     console.error('Delete campaign error:', error);
-    return Response.json(
+    return NextResponse.json(
       { success: false, message: 'Failed to delete campaign' },
       { status: 500 }
     );
