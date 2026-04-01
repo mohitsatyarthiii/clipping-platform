@@ -1,4 +1,4 @@
-// app/api/campaigns/route.js - Complete updated version
+// app/api/campaigns/route.js - Complete fixed version
 import connectDB from '@/lib/db';
 import Campaign from '@/models/Campaign';
 import { verifyToken } from '@/lib/jwtService';
@@ -121,6 +121,9 @@ export async function POST(req) {
       );
     }
 
+    const body = await req.json();
+    console.log('📦 Received body:', JSON.stringify(body, null, 2)); // Debug log
+    
     const {
       title,
       description,
@@ -129,8 +132,8 @@ export async function POST(req) {
       startDate,
       endDate,
       banner,
-      sourceLinks, // Add sourceLinks here
-    } = await req.json();
+      sourceLinks,
+    } = body;
 
     if (!title || !description || !payoutPer1000Views) {
       return Response.json(
@@ -148,7 +151,19 @@ export async function POST(req) {
       );
     }
 
-    const campaign = await Campaign.create({
+    // Clean source links - remove any invalid ones
+    const cleanedSourceLinks = (sourceLinks || [])
+      .filter(link => link.title && link.url) // Only keep links with both title and URL
+      .map(link => ({
+        title: link.title.trim(),
+        url: link.url.trim(),
+        description: link.description || '',
+        type: link.type || 'other'
+      }));
+    
+    console.log('📦 Cleaned source links:', cleanedSourceLinks); // Debug log
+
+    const campaignData = {
       title: title.trim(),
       description: description.trim(),
       payoutPer1000Views: payoutAmount,
@@ -156,11 +171,18 @@ export async function POST(req) {
       startDate: startDate ? new Date(startDate) : new Date(),
       endDate: endDate ? new Date(endDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       banner: banner || null,
-      sourceLinks: sourceLinks || [], // Save source links
+      sourceLinks: cleanedSourceLinks,
       createdBy: userId,
       status: 'active',
       creators: [],
-    });
+    };
+    
+    console.log('📦 Campaign data to save:', JSON.stringify(campaignData, null, 2)); // Debug log
+
+    const campaign = await Campaign.create(campaignData);
+    
+    console.log('✅ Campaign created successfully with ID:', campaign._id);
+    console.log('✅ Source links saved:', campaign.sourceLinks);
 
     return Response.json(
       {
@@ -171,7 +193,7 @@ export async function POST(req) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Create campaign error:', error);
+    console.error('❌ Create campaign error:', error);
     
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors)
@@ -184,7 +206,7 @@ export async function POST(req) {
     }
 
     return Response.json(
-      { success: false, message: 'Failed to create campaign' },
+      { success: false, message: 'Failed to create campaign', error: error.message },
       { status: 500 }
     );
   }
