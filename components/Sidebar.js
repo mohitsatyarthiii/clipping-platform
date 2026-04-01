@@ -16,6 +16,10 @@ import {
   Video,
   ChevronLeft,
   ChevronRight,
+  BarChart3,
+  DollarSign,
+  TrendingUp,
+  Briefcase,
 } from 'lucide-react';
 
 const Sidebar = ({ collapsed = false }) => {
@@ -65,18 +69,62 @@ const Sidebar = ({ collapsed = false }) => {
   ];
 
   const brandMenuItems = [
-    { href: '/dashboard/brand', icon: LayoutDashboard, label: 'Dashboard' },
+    { 
+      href: '/dashboard/brand', 
+      icon: LayoutDashboard, 
+      label: 'Dashboard',
+      description: 'Overview & Stats'
+    },
     {
-      section: 'Campaigns',
+      section: 'Campaign Management',
       items: [
-        { href: '/dashboard/brand/campaigns', icon: FileText, label: 'My Campaigns' },
-        { href: '/dashboard/brand/campaigns/create', icon: Upload, label: 'Create Campaign' },
+        { 
+          href: '/dashboard/brand/campaigns', 
+          icon: Briefcase, 
+          label: 'All Campaigns',
+          description: 'Manage your campaigns'
+        },
+        { 
+          href: '/dashboard/brand/campaigns/new', 
+          icon: Upload, 
+          label: 'Create Campaign',
+          description: 'Launch new campaign'
+        },
       ],
     },
     {
-      href: '/dashboard/brand/earnings',
-      icon: Award,
-      label: 'Earnings',
+      section: 'Analytics & Reports',
+      items: [
+        { 
+          href: '/dashboard/brand/analytics', 
+          icon: BarChart3, 
+          label: 'Analytics',
+          description: 'Performance metrics'
+        },
+        { 
+          href: '/dashboard/brand/earnings', 
+          icon: DollarSign, 
+          label: 'Earnings',
+          description: 'Revenue & payouts'
+        },
+        { 
+          href: '/dashboard/brand/creators', 
+          icon: Users, 
+          label: 'Creators',
+          description: 'Your creator network'
+        },
+      ],
+    },
+    {
+      section: 'Settings',
+      items: [
+        { 
+          href: '/dashboard/brand/settings', 
+          icon: Settings, 
+          label: 'Settings',
+          description: 'Account preferences'
+        },
+      ],
     },
   ];
 
@@ -92,10 +140,25 @@ const Sidebar = ({ collapsed = false }) => {
 
   return (
     <aside
-      className={`hidden md:flex flex-col bg-linear-to-b from-slate-900/95 to-slate-950/95 border-r border-slate-700/50 backdrop-blur-xl transition-all duration-300 overflow-hidden ${
-        collapsed ? 'w-20' : 'w-64'
+      className={`hidden md:flex flex-col bg-gradient-to-b from-slate-900/95 to-slate-950/95 border-r border-slate-700/50 backdrop-blur-xl transition-all duration-300 overflow-hidden ${
+        collapsed ? 'w-20' : 'w-72'
       }`}
     >
+      {/* Brand Header - Only for brand role */}
+      {user?.role === 'brand' && !collapsed && (
+        <div className="p-6 border-b border-slate-700/50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center">
+              <Briefcase size={20} className="text-white" />
+            </div>
+            <div>
+              <h2 className="text-white font-semibold text-lg">Brand Portal</h2>
+              <p className="text-slate-400 text-xs">Manage your campaigns</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {menuItems.map((item, idx) => {
@@ -108,24 +171,38 @@ const Sidebar = ({ collapsed = false }) => {
                     {item.section}
                   </p>
                 )}
-                {item.items.map((subItem) => {
-                  const Icon = subItem.icon;
-                  const isActive = pathname === subItem.href;
-                  return (
-                    <Link
-                      key={subItem.href}
-                      href={subItem.href}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium ${
-                        isActive
-                          ? 'bg-linear-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/30 shadow-lg shadow-cyan-500/10'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/40 border border-transparent'
-                      }`}
-                    >
-                      <Icon size={18} className="shrink-0" />
-                      {!collapsed && <span className="truncate">{subItem.label}</span>}
-                    </Link>
-                  );
-                })}
+                <div className="space-y-1">
+                  {item.items.map((subItem) => {
+                    const Icon = subItem.icon;
+                    const isActive = pathname === subItem.href;
+                    return (
+                      <Link
+                        key={subItem.href}
+                        href={subItem.href}
+                        className={`group flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium ${
+                          isActive
+                            ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/30 shadow-lg shadow-cyan-500/10'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800/40 border border-transparent'
+                        }`}
+                      >
+                        <Icon size={18} className="shrink-0" />
+                        {!collapsed && (
+                          <div className="flex-1">
+                            <span className="block truncate">{subItem.label}</span>
+                            {subItem.description && (
+                              <span className="text-xs text-slate-500 block">
+                                {subItem.description}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {!collapsed && isActive && (
+                          <div className="w-1 h-6 bg-cyan-500 rounded-full" />
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             );
           }
@@ -138,14 +215,26 @@ const Sidebar = ({ collapsed = false }) => {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium ${
+              className={`group flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium ${
                 isActive
-                  ? 'bg-linear-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/30 shadow-lg shadow-cyan-500/10'
+                  ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/30 shadow-lg shadow-cyan-500/10'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/40 border border-transparent'
               }`}
             >
               <Icon size={18} className="shrink-0" />
-              {!collapsed && <span className="truncate">{item.label}</span>}
+              {!collapsed && (
+                <div className="flex-1">
+                  <span className="block truncate">{item.label}</span>
+                  {item.description && (
+                    <span className="text-xs text-slate-500 block">
+                      {item.description}
+                    </span>
+                  )}
+                </div>
+              )}
+              {!collapsed && isActive && (
+                <div className="w-1 h-6 bg-cyan-500 rounded-full" />
+              )}
             </Link>
           );
         })}
@@ -155,22 +244,32 @@ const Sidebar = ({ collapsed = false }) => {
       <div className="p-4 space-y-1 border-t border-slate-700/50">
         <Link
           href="/profile"
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium ${
+          className={`group flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium ${
             pathname === '/profile'
-              ? 'bg-linear-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/30'
+              ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/30'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/40 border border-transparent'
           }`}
         >
           <Settings size={18} className="shrink-0" />
-          {!collapsed && <span className="truncate">Settings</span>}
+          {!collapsed && (
+            <div className="flex-1">
+              <span className="block truncate">Settings</span>
+              <span className="text-xs text-slate-500 block">Account preferences</span>
+            </div>
+          )}
         </Link>
 
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400/80 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 text-sm font-medium border border-transparent"
+          className="w-full group flex items-center gap-3 px-4 py-3 rounded-lg text-red-400/80 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 text-sm font-medium border border-transparent"
         >
           <LogOut size={18} className="shrink-0" />
-          {!collapsed && <span className="truncate">Logout</span>}
+          {!collapsed && (
+            <div className="flex-1 text-left">
+              <span className="block truncate">Logout</span>
+              <span className="text-xs text-red-400/60 block">Sign out of account</span>
+            </div>
+          )}
         </button>
       </div>
     </aside>
