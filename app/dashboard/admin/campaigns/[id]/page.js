@@ -21,21 +21,35 @@ export default function AdminCampaignDetailsPage() {
   const router = useRouter();
   const campaignId = params?.id;
 
-  // Add debugging
+  // Debug logging
+  console.log('Raw params:', params);
   console.log('Campaign ID from params:', campaignId);
+  console.log('Campaign ID type:', typeof campaignId);
+  console.log('Full URL:', window.location.href);
 
-  // Use a ref to track if we've already fetched
-  const [shouldFetch, setShouldFetch] = useState(false);
-
+  // Validate campaign ID
+  const [validationError, setValidationError] = useState(null);
+  
   useEffect(() => {
     if (campaignId) {
-      setShouldFetch(true);
+      // Check if ID is valid format (24 character hex string)
+      const isValidId = /^[0-9a-fA-F]{24}$/.test(campaignId);
+      if (!isValidId) {
+        setValidationError('Invalid campaign ID format');
+        console.error('Invalid campaign ID format:', campaignId);
+      } else {
+        setValidationError(null);
+      }
     }
   }, [campaignId]);
 
-  const { data: campaign, loading, error, refetch } = useFetch(
-    shouldFetch && campaignId ? `/campaigns/${campaignId}` : null
-  );
+  // Encode the campaign ID to handle any special characters
+  const encodedCampaignId = campaignId ? encodeURIComponent(campaignId) : null;
+  const apiUrl = encodedCampaignId ? `/api/campaigns/${encodedCampaignId}` : null;
+  
+  console.log('API URL:', apiUrl);
+
+  const { data: campaign, loading, error, refetch } = useFetch(apiUrl);
   const { put } = usePut();
 
   const [viewMode, setViewMode] = useState('view');
@@ -59,6 +73,7 @@ export default function AdminCampaignDetailsPage() {
     }
     if (error) {
       console.error('Error fetching campaign:', error);
+      console.error('Error details:', error.message);
     }
   }, [campaign, error]);
 
@@ -80,7 +95,7 @@ export default function AdminCampaignDetailsPage() {
 
     try {
       setIsSubmitting(true);
-      await put(`/campaigns/${campaignId}/creators/${editingCreatorId}`, {
+      await put(`/api/campaigns/${encodedCampaignId}/creators/${editingCreatorId}`, {
         action: 'update-links',
         platformLinks: linksFormData,
       });
@@ -100,7 +115,7 @@ export default function AdminCampaignDetailsPage() {
 
     try {
       setIsSubmitting(true);
-      await put(`/campaigns/${campaignId}/creators/${editingCreatorId}`, {
+      await put(`/api/campaigns/${encodedCampaignId}/creators/${editingCreatorId}`, {
         action: 'ban',
         bannedReason: banReason,
       });
@@ -119,7 +134,7 @@ export default function AdminCampaignDetailsPage() {
   const handleRestoreCreator = async (creatorId) => {
     try {
       setIsSubmitting(true);
-      await put(`/campaigns/${campaignId}/creators/${creatorId}`, {
+      await put(`/api/campaigns/${encodedCampaignId}/creators/${creatorId}`, {
         action: 'restore',
       });
       toast.success('Creator restored successfully');
@@ -136,7 +151,7 @@ export default function AdminCampaignDetailsPage() {
     if (confirm('Are you sure you want to remove this creator from the campaign?')) {
       try {
         setIsSubmitting(true);
-        await put(`/campaigns/${campaignId}/creators/${creatorId}`, {
+        await put(`/api/campaigns/${encodedCampaignId}/creators/${creatorId}`, {
           action: 'remove',
         });
         toast.success('Creator removed successfully');
@@ -150,8 +165,34 @@ export default function AdminCampaignDetailsPage() {
     }
   };
 
+  // Show validation error
+  if (validationError) {
+    return (
+      <DashboardLayout>
+        <div className="px-6 py-8">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            className="gap-2 mb-6"
+          >
+            <ArrowLeft size={16} /> Back
+          </Button>
+          <Card className="text-center py-12">
+            <p className="text-red-400 text-lg mb-2">Invalid Campaign ID</p>
+            <p className="text-gray-400 mb-4">{validationError}</p>
+            <p className="text-gray-500 text-sm mb-4">Campaign ID: {campaignId}</p>
+            <Button onClick={() => router.push('/dashboard/admin/campaigns')} className="mt-4">
+              Back to Campaigns
+            </Button>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   // Show loading state
-  if (loading || !shouldFetch) {
+  if (loading) {
     return (
       <DashboardLayout>
         <div className="px-6 py-8">
@@ -173,7 +214,7 @@ export default function AdminCampaignDetailsPage() {
     );
   }
 
-  // Show error state
+  // Show error state with more details
   if (error) {
     return (
       <DashboardLayout>
@@ -189,6 +230,7 @@ export default function AdminCampaignDetailsPage() {
           <Card className="text-center py-12">
             <p className="text-red-400 text-lg mb-2">Error loading campaign</p>
             <p className="text-gray-400 mb-4">{error.message || 'Failed to fetch campaign data'}</p>
+            <p className="text-gray-500 text-sm mb-4">Campaign ID: {campaignId}</p>
             <div className="flex gap-3 justify-center">
               <Button onClick={() => refetch()} className="mt-4">
                 Try Again
