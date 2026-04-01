@@ -85,7 +85,7 @@ const Sidebar = ({ collapsed = false }) => {
           description: 'Manage your campaigns'
         },
         { 
-          href: '/dashboard/brand/campaigns/new', 
+          href: '/dashboard/brand/campaigns/create', 
           icon: Upload, 
           label: 'Create Campaign',
           description: 'Launch new campaign'
