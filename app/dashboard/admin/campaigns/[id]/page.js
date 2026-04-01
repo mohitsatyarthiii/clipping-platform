@@ -45,7 +45,7 @@ export default function AdminCampaignDetailsPage() {
 
   // Encode the campaign ID to handle any special characters
   const encodedCampaignId = campaignId ? encodeURIComponent(campaignId) : null;
-  const apiUrl = encodedCampaignId ? `/api/campaigns/${encodedCampaignId}` : null;
+  const apiUrl = encodedCampaignId ? `/campaigns/${encodedCampaignId}` : null;
   
   console.log('API URL:', apiUrl);
 
