@@ -24,18 +24,18 @@ export async function GET(req) {
       );
     }
 
-    // Get earnings from clippers and creators
-    const clippers = await User.find({ role: { $in: ['clipper', 'creator'] } })
+    // Get earnings from creators
+    const creators = await User.find({ role: 'creator' })
       .select('name email earnings')
       .lean();
 
-    const earnings = clippers.map((clipper) => ({
-      userId: clipper._id,
-      userName: clipper.name,
-      userEmail: clipper.email,
-      total: clipper.earnings?.total || 0,
-      pending: clipper.earnings?.pending || 0,
-      paid: clipper.earnings?.paid || 0,
+    const earnings = creators.map((creator) => ({
+      userId: creator._id,
+      userName: creator.name,
+      userEmail: creator.email,
+      total: creator.earnings?.total || 0,
+      pending: creator.earnings?.pending || 0,
+      paid: creator.earnings?.paid || 0,
     }));
 
     const totalRevenue = earnings.reduce((sum, e) => sum + e.total, 0);
@@ -50,7 +50,7 @@ export async function GET(req) {
           totalRevenue,
           totalPending,
           totalPaid,
-          totalUsers: clippers.length,
+          totalUsers: creators.length,
         },
       },
       { status: 200 }

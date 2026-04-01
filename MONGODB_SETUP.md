@@ -13,8 +13,6 @@
 
 **Current MongoDB URI in .env.local:**
 ```
-MONGODB_URI=mongodb+srv://mohitsatyarthi11_db_user:4fpFP0cyH4gdWxJM@cluster0.stfpjoa.mongodb.net/clipping-platform?retryWrites=true&w=majority
-```
 
 ---
 

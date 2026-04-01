@@ -101,7 +101,6 @@ export async function POST(req) {
       description,
       payoutPer1000Views,
       rules,
-      maxClippers,
       startDate,
       endDate,
       banner,
@@ -116,7 +115,6 @@ export async function POST(req) {
 
     // Convert string values to proper types
     const payoutAmount = parseFloat(payoutPer1000Views);
-    const maxClippersCount = maxClippers ? parseInt(maxClippers, 10) : null;
 
     if (isNaN(payoutAmount) || payoutAmount <= 0) {
       return Response.json(
@@ -130,7 +128,6 @@ export async function POST(req) {
       description: description.trim(),
       payoutPer1000Views: payoutAmount,
       rules: rules ? rules.trim() : '',
-      maxClippers: maxClippersCount,
       startDate: startDate ? new Date(startDate) : new Date(),
       endDate: endDate ? new Date(endDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       banner: banner || null,

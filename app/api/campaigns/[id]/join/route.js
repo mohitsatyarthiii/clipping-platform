@@ -52,14 +52,6 @@ export async function POST(req, { params }) {
       );
     }
 
-    // Check max creators limit
-    if (campaign.maxClippers && campaign.creators.length >= campaign.maxClippers) {
-      return Response.json(
-        { success: false, message: 'This campaign has reached maximum creators' },
-        { status: 400 }
-      );
-    }
-
     // Validate that at least one platform link is provided
     if (!platformLinks || !Object.values(platformLinks).some(link => link?.trim())) {
       return Response.json(

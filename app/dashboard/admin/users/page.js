@@ -44,8 +44,8 @@ export default function UsersPage() {
   const getRoleColor = (role) => {
     const colors = {
       admin: 'purple',
+      brand: 'cyan',
       creator: 'blue',
-      clipper: 'cyan',
     };
     return colors[role] || 'gray';
   };

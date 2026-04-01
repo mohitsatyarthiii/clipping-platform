@@ -26,7 +26,7 @@ export default function EarningsPage() {
   const totalRevenue = earnings.reduce((sum, e) => sum + (e.total || 0), 0);
   const pendingPayouts = earnings.reduce((sum, e) => sum + (e.pending || 0), 0);
   const totalPaid = earnings.reduce((sum, e) => sum + (e.paid || 0), 0);
-  const totalClippers = new Set(earnings.map((e) => e.userId)).size;
+  const totalCreators = new Set(earnings.map((e) => e.userId)).size;
 
   const StatCard = ({ icon: Icon, label, value, color = 'cyan' }) => (
     <Card className="bg-linear-to-br from-slate-800/40 to-slate-900/60 border-slate-700/50 hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/10">
@@ -80,8 +80,8 @@ export default function EarningsPage() {
             />
             <StatCard
               icon={Users}
-              label="Active Clippers"
-              value={totalClippers}
+              label="Active Creators"
+              value={totalCreators}
               color="purple"
             />
           </div>

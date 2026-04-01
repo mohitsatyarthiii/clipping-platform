@@ -25,7 +25,13 @@ const Sidebar = ({ collapsed = false }) => {
 
   const adminMenuItems = [
     { href: '/dashboard/admin', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/dashboard/admin/campaigns', icon: FileText, label: 'Campaigns' },
+    {
+      section: 'Campaigns',
+      items: [
+        { href: '/dashboard/admin/campaigns', icon: FileText, label: 'All Campaigns' },
+        { href: '/dashboard/admin/campaigns/create', icon: Upload, label: 'Create Campaign' },
+      ],
+    },
     {
       href: '/dashboard/admin/join-requests',
       icon: Users,
@@ -43,39 +49,34 @@ const Sidebar = ({ collapsed = false }) => {
   const creatorMenuItems = [
     { href: '/dashboard/creator', icon: LayoutDashboard, label: 'Dashboard' },
     {
-      href: '/dashboard/creator/source-content',
-      icon: Video,
-      label: 'Source Content',
+      section: 'Campaigns',
+      items: [
+        { href: '/dashboard/creator/campaigns', icon: FileText, label: 'Browse Campaigns' },
+        { href: '/dashboard/creator/my-campaigns', icon: Users, label: 'My Campaigns' },
+      ],
     },
     {
-      href: '/dashboard/creator/performance',
-      icon: Zap,
-      label: 'Performance',
+      section: 'Content',
+      items: [
+        { href: '/dashboard/creator/source-content', icon: Video, label: 'Platform Links' },
+        { href: '/dashboard/creator/performance', icon: Zap, label: 'Performance' },
+      ],
     },
   ];
 
   const brandMenuItems = [
     { href: '/dashboard/brand', icon: LayoutDashboard, label: 'Dashboard' },
     {
-      href: '/dashboard/brand/campaigns',
-      icon: FileText,
-      label: 'Campaigns',
+      section: 'Campaigns',
+      items: [
+        { href: '/dashboard/brand/campaigns', icon: FileText, label: 'My Campaigns' },
+        { href: '/dashboard/brand/campaigns/create', icon: Upload, label: 'Create Campaign' },
+      ],
     },
-  ];
-
-  const clipperMenuItems = [
-    { href: '/dashboard/clipper', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/dashboard/clipper/campaigns', icon: FileText, label: 'Campaigns' },
     {
-      href: '/dashboard/clipper/my-campaigns',
-      icon: Users,
-      label: 'My Campaigns',
-    },
-    { href: '/dashboard/clipper/submit', icon: Upload, label: 'Submit Clip' },
-    {
-      href: '/dashboard/clipper/submissions',
-      icon: CheckCircle,
-      label: 'My Submissions',
+      href: '/dashboard/brand/earnings',
+      icon: Award,
+      label: 'Earnings',
     },
   ];
 
@@ -83,7 +84,6 @@ const Sidebar = ({ collapsed = false }) => {
   if (user?.role === 'admin') menuItems = adminMenuItems;
   else if (user?.role === 'creator') menuItems = creatorMenuItems;
   else if (user?.role === 'brand') menuItems = brandMenuItems;
-  else if (user?.role === 'clipper') menuItems = clipperMenuItems;
 
   const handleLogout = () => {
     logout();
@@ -97,8 +97,40 @@ const Sidebar = ({ collapsed = false }) => {
       }`}
     >
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => {
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        {menuItems.map((item, idx) => {
+          // Handle section headers with nested items
+          if (item.section && item.items) {
+            return (
+              <div key={idx} className="py-2">
+                {!collapsed && (
+                  <p className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    {item.section}
+                  </p>
+                )}
+                {item.items.map((subItem) => {
+                  const Icon = subItem.icon;
+                  const isActive = pathname === subItem.href;
+                  return (
+                    <Link
+                      key={subItem.href}
+                      href={subItem.href}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium ${
+                        isActive
+                          ? 'bg-linear-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/30 shadow-lg shadow-cyan-500/10'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800/40 border border-transparent'
+                      }`}
+                    >
+                      <Icon size={18} className="shrink-0" />
+                      {!collapsed && <span className="truncate">{subItem.label}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            );
+          }
+
+          // Handle regular menu items
           const Icon = item.icon;
           const isActive = pathname === item.href;
 

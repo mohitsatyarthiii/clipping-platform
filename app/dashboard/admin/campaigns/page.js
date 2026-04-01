@@ -26,7 +26,6 @@ export default function CampaignsPage() {
     description: '',
     payoutPer1000Views: '',
     rules: '',
-    maxClippers: '',
     startDate: '',
     endDate: '',
   });
@@ -60,7 +59,6 @@ export default function CampaignsPage() {
       const payload = {
         ...formData,
         payoutPer1000Views: parseFloat(formData.payoutPer1000Views),
-        maxClippers: formData.maxClippers ? parseInt(formData.maxClippers) : null,
       };
       
       if (editingId) {
@@ -202,7 +200,6 @@ export default function CampaignsPage() {
               description: '',
               payoutPer1000Views: '',
               rules: '',
-              maxClippers: '',
               startDate: '',
               endDate: '',
             });
@@ -256,12 +253,7 @@ export default function CampaignsPage() {
               value={formData.rules}
               onChange={(e) => setFormData({ ...formData, rules: e.target.value })}
             />
-            <Input
-              label="Max Creators (Optional)"
-              type="number"
-              value={formData.maxClippers}
-              onChange={(e) => setFormData({ ...formData, maxClippers: e.target.value })}
-            />
+
             <Input
               label="Start Date"
               type="date"

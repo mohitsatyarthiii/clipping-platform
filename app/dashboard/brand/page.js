@@ -33,7 +33,6 @@ export default function BrandDashboardPage() {
     payoutPer1000Views: '',
     startDate: '',
     endDate: '',
-    maxClippers: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,7 +58,6 @@ export default function BrandDashboardPage() {
       const payload = {
         ...formData,
         payoutPer1000Views: parseFloat(formData.payoutPer1000Views),
-        maxClippers: formData.maxClippers ? parseInt(formData.maxClippers) : 100,
       };
       await post('/campaigns', payload);
       toast.success('Campaign created successfully!');
@@ -71,7 +69,6 @@ export default function BrandDashboardPage() {
         payoutPer1000Views: '',
         startDate: '',
         endDate: '',
-        maxClippers: '',
       });
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create campaign');
@@ -133,16 +130,7 @@ export default function BrandDashboardPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Max Creators</label>
-                <Input
-                  type="number"
-                  placeholder="100"
-                  min="1"
-                  value={formData.maxClippers}
-                  onChange={(e) => setFormData({ ...formData, maxClippers: e.target.value })}
-                />
-              </div>
+
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -397,14 +385,7 @@ export default function BrandDashboardPage() {
                 value={formData.payoutPer1000Views}
                 onChange={(e) => setFormData({ ...formData, payoutPer1000Views: e.target.value })}
               />
-              <Input
-                label="Max Creators"
-                type="number"
-                placeholder="100"
-                min="1"
-                value={formData.maxClippers}
-                onChange={(e) => setFormData({ ...formData, maxClippers: e.target.value })}
-              />
+
             </div>
             <div className="flex gap-3 justify-end pt-4 border-t border-gray-700/30">
               <Button variant="ghost" onClick={() => setIsCreateModalOpen(false)} disabled={isSubmitting}>

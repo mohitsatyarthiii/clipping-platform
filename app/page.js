@@ -38,8 +38,8 @@ export default function HomePage() {
       hasRedirectedRef.current = true;
       const dashboards = {
         admin: '/dashboard/admin',
+        brand: '/dashboard/brand',
         creator: '/dashboard/creator',
-        clipper: '/dashboard/clipper',
       };
       router.push(dashboards[user.role] || '/dashboard/admin');
     }
@@ -66,7 +66,7 @@ export default function HomePage() {
             className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 rounded-full px-4 py-2 mb-8"
           >
             <Star className="w-4 h-4 text-purple-400" />
-            <span className="text-sm text-purple-400">#1 Clipping Platform</span>
+            <span className="text-sm text-purple-400">#1 Creator Marketplace</span>
           </motion.div>
 
           <motion.h1
@@ -84,7 +84,7 @@ export default function HomePage() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-xl md:text-2xl text-gray-300 mb-10 max-w-3xl mx-auto"
           >
-            The ultimate marketplace for creators and content clippers. Monetize your content and earn from clips instantly.
+            The ultimate marketplace for creators and brands. Monetize your content and earn from views instantly.
           </motion.p>
 
           <motion.div
@@ -152,7 +152,7 @@ export default function HomePage() {
             {
               icon: Users,
               title: 'Build Community',
-              description: 'Clippers join your campaigns and create viral clips from your content. Grow your audience together.',
+              description: 'Creators join your campaigns and share your content. Grow your audience together.',
               color: 'from-cyan-500 to-cyan-600',
               step: '02'
             },
@@ -299,7 +299,7 @@ export default function HomePage() {
             },
             {
               name: "Michael Chen",
-              role: "Professional Clipper",
+              role: "Content Promoter",
               content: "Best decision I made this year. The earnings are consistent and the platform is super easy to use.",
               rating: 5,
               image: "https://randomuser.me/api/portraits/men/1.jpg"
@@ -422,7 +422,7 @@ export default function HomePage() {
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Get Started?</h2>
             <p className="text-xl text-gray-300 mb-10">
-              Join thousands of creators and clippers earning money every day
+              Join thousands of creators and brands earning money every day
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/register">
@@ -447,10 +447,10 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-8">
             <div className="lg:col-span-2">
               <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent mb-4">
-                Clipping Platform
+                Creator Marketplace
               </h3>
               <p className="text-gray-400 mb-4">
-                The ultimate marketplace for creators and content clippers. Monetize your content and earn from clips instantly.
+                The ultimate marketplace for creators and brands. Monetize your content and earn from views instantly.
               </p>
               
             </div>

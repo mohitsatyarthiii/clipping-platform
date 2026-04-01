@@ -69,13 +69,6 @@ export async function PUT(req, { params }) {
 
     await joinRequest.save();
 
-    // Update campaign clipper count if approved
-    if (action === 'approve') {
-      await Campaign.findByIdAndUpdate(joinRequest.campaignId._id, {
-        $inc: { currentClippers: 1 },
-      });
-    }
-
     // Send notification to user
     if (action === 'approve') {
       await createNotification(
