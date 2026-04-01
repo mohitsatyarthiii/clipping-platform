@@ -72,6 +72,14 @@ export default function CampaignsPage() {
       return;
     }
     
+    // Validate URL format
+    try {
+      new URL(newLink.url);
+    } catch (e) {
+      toast.error('Please enter a valid URL (include http:// or https://)');
+      return;
+    }
+    
     setSourceLinks([...sourceLinks, { ...newLink }]);
     setNewLink({ title: '', url: '', description: '', type: 'other' });
     setShowAddLinkForm(false);
@@ -85,7 +93,10 @@ export default function CampaignsPage() {
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      toast.error('Please fix the errors in the form');
+      return;
+    }
 
     try {
       const payload = {
@@ -96,8 +107,10 @@ export default function CampaignsPage() {
         startDate: new Date(formData.startDate),
         endDate: new Date(formData.endDate),
         status: formData.status,
-        sourceLinks: sourceLinks, // Add source links to payload
+        sourceLinks: sourceLinks, // Source links ko payload mein bhej rahe hain
       };
+      
+      console.log('Submitting payload:', JSON.stringify(payload, null, 2)); // Debug log
       
       if (editingId) {
         await put(`/campaigns/${editingId}`, payload);
@@ -395,7 +408,7 @@ export default function CampaignsPage() {
                       onChange={(e) => setNewLink({ ...newLink, title: e.target.value })}
                     />
                     <Input
-                      placeholder="URL *"
+                      placeholder="URL * (include http:// or https://)"
                       value={newLink.url}
                       onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
                     />
