@@ -19,9 +19,9 @@ export default function BrandCampaignDetailPage() {
   useProtectedRoute('brand');
   const params = useParams();
   const router = useRouter();
-  const campaignId = params.id;
+  const campaignId = params?.id;
 
-  const { data: campaign, loading, refetch } = useFetch(`/campaigns/${campaignId}`);
+  const { data: campaign, loading, refetch } = useFetch(campaignId ? `/campaigns/${campaignId}` : null);
   const { put } = usePut();
 
   const [viewMode, setViewMode] = useState('view'); // 'view' or 'edit'

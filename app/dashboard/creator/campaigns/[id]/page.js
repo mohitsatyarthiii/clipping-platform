@@ -21,9 +21,9 @@ export default function CreatorCampaignDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuthStore();
-  const campaignId = params.id;
+  const campaignId = params?.id;
 
-  const { data: campaign, loading, refetch } = useFetch(`/campaigns/${campaignId}`);
+  const { data: campaign, loading, refetch } = useFetch(campaignId ? `/campaigns/${campaignId}` : null);
   const { post, loading: isJoining } = usePost();
   const { put } = usePut();
 

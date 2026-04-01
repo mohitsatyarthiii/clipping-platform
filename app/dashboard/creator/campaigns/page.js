@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 export default function CreatorCampaignsPage() {
   useProtectedRoute('creator');
   const { data: allCampaigns, loading: allLoading, refetch: refetchAll } = useFetch('/campaigns?status=active');
-  const { data: myCampaigns, loading: myLoading, refetch: refetchMy } = useFetch('/campaigns/my-campaigns');
+  const { data: myCampaigns, loading: myLoading, refetch: refetchMy } = useFetch('/campaigns?joinedByMe=true');
   const { data: earnings, loading: earningsLoading } = useFetch('/creator/earnings');
   const { post } = usePost();
   const user = useAuthStore((state) => state.user);

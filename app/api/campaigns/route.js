@@ -14,12 +14,13 @@ export async function GET(req) {
     const status = searchParams.get('status');
     const sortBy = searchParams.get('sort') || '-createdAt';
     const createdByMe = searchParams.get('createdByMe') === 'true';
+    const joinedByMe = searchParams.get('joinedByMe') === 'true';
 
     const skip = (page - 1) * limit;
 
-    // Get auth token if createdByMe filter is used
+    // Get auth token if createdByMe or joinedByMe filter is used
     let userId = null;
-    if (createdByMe) {
+    if (createdByMe || joinedByMe) {
       const token = req.headers.get('authorization')?.split(' ')[1];
       if (!token) {
         return Response.json(
@@ -36,6 +37,9 @@ export async function GET(req) {
     if (status) filter.status = status;
     if (createdByMe && userId) {
       filter.createdBy = userId;
+    }
+    if (joinedByMe && userId) {
+      filter['creators.creatorId'] = userId;
     }
 
     // Use parallel queries for better performance
