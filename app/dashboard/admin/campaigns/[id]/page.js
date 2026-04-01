@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useProtectedRoute } from '@/lib/hooks/useProtectedRoute';
@@ -21,10 +21,24 @@ export default function AdminCampaignDetailsPage() {
   const router = useRouter();
   const campaignId = params?.id;
 
-  const { data: campaign, loading, refetch } = useFetch(campaignId ? `/campaigns/${campaignId}` : null);
+  // Add debugging
+  console.log('Campaign ID from params:', campaignId);
+
+  // Use a ref to track if we've already fetched
+  const [shouldFetch, setShouldFetch] = useState(false);
+
+  useEffect(() => {
+    if (campaignId) {
+      setShouldFetch(true);
+    }
+  }, [campaignId]);
+
+  const { data: campaign, loading, error, refetch } = useFetch(
+    shouldFetch && campaignId ? `/campaigns/${campaignId}` : null
+  );
   const { put } = usePut();
 
-  const [viewMode, setViewMode] = useState('view'); // 'view' or 'edit'
+  const [viewMode, setViewMode] = useState('view');
   const [editingCreatorId, setEditingCreatorId] = useState(null);
   const [showLinksModal, setShowLinksModal] = useState(false);
   const [showBanModal, setShowBanModal] = useState(false);
@@ -37,6 +51,16 @@ export default function AdminCampaignDetailsPage() {
     twitter: '',
     other: '',
   });
+
+  // Debug API response
+  useEffect(() => {
+    if (campaign) {
+      console.log('Campaign data received:', campaign);
+    }
+    if (error) {
+      console.error('Error fetching campaign:', error);
+    }
+  }, [campaign, error]);
 
   const handleEditLinks = (creator) => {
     setViewMode('edit');
@@ -64,6 +88,7 @@ export default function AdminCampaignDetailsPage() {
       setShowLinksModal(false);
       refetch();
     } catch (error) {
+      console.error('Error saving links:', error);
       toast.error(error.response?.data?.message || 'Failed to update links');
     } finally {
       setIsSubmitting(false);
@@ -84,6 +109,7 @@ export default function AdminCampaignDetailsPage() {
       setBanReason('');
       refetch();
     } catch (error) {
+      console.error('Error banning creator:', error);
       toast.error(error.response?.data?.message || 'Failed to ban creator');
     } finally {
       setIsSubmitting(false);
@@ -99,6 +125,7 @@ export default function AdminCampaignDetailsPage() {
       toast.success('Creator restored successfully');
       refetch();
     } catch (error) {
+      console.error('Error restoring creator:', error);
       toast.error(error.response?.data?.message || 'Failed to restore creator');
     } finally {
       setIsSubmitting(false);
@@ -115,6 +142,7 @@ export default function AdminCampaignDetailsPage() {
         toast.success('Creator removed successfully');
         refetch();
       } catch (error) {
+        console.error('Error removing creator:', error);
         toast.error(error.response?.data?.message || 'Failed to remove creator');
       } finally {
         setIsSubmitting(false);
@@ -122,10 +150,17 @@ export default function AdminCampaignDetailsPage() {
     }
   };
 
-  if (loading) {
+  // Show loading state
+  if (loading || !shouldFetch) {
     return (
       <DashboardLayout>
         <div className="px-6 py-8">
+          <div className="flex items-center gap-4 mb-8">
+            <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-2">
+              <ArrowLeft size={16} /> Back
+            </Button>
+            <Skeleton className="h-12 w-64" />
+          </div>
           <Skeleton className="h-32 mb-8" />
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             {[...Array(4)].map((_, i) => (
@@ -138,6 +173,37 @@ export default function AdminCampaignDetailsPage() {
     );
   }
 
+  // Show error state
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="px-6 py-8">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            className="gap-2 mb-6"
+          >
+            <ArrowLeft size={16} /> Back
+          </Button>
+          <Card className="text-center py-12">
+            <p className="text-red-400 text-lg mb-2">Error loading campaign</p>
+            <p className="text-gray-400 mb-4">{error.message || 'Failed to fetch campaign data'}</p>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={() => refetch()} className="mt-4">
+                Try Again
+              </Button>
+              <Button onClick={() => router.push('/dashboard/admin/campaigns')} variant="ghost" className="mt-4">
+                Back to Campaigns
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show not found state
   if (!campaign || !campaign.campaign) {
     return (
       <DashboardLayout>
@@ -152,8 +218,9 @@ export default function AdminCampaignDetailsPage() {
           </Button>
           <Card className="text-center py-12">
             <p className="text-gray-400 text-lg">Campaign not found</p>
-            <Button onClick={() => router.back()} className="mt-4">
-              Go Back
+            <p className="text-gray-500 text-sm mt-2">Campaign ID: {campaignId}</p>
+            <Button onClick={() => router.push('/dashboard/admin/campaigns')} className="mt-4">
+              View All Campaigns
             </Button>
           </Card>
         </div>
@@ -170,9 +237,6 @@ export default function AdminCampaignDetailsPage() {
   const totalViews = activeCreators.reduce((sum, c) => sum + (c.stats?.views || 0), 0);
   const totalEarnings = activeCreators.reduce((sum, c) => sum + (c.earnings?.total || 0), 0);
   const totalPending = activeCreators.reduce((sum, c) => sum + (c.earnings?.pending || 0), 0);
-
-  // Sort creators by views (top creators)
-  const topCreators = [...activeCreators].sort((a, b) => (b.stats?.views || 0) - (a.stats?.views || 0));
 
   // Get brand info
   const brandName = campaignData.createdBy?.name || 'Unknown Brand';

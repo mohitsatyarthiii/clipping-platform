@@ -50,14 +50,8 @@ export default function CreatorCampaignDetailPage() {
   }, [campaign, user?.id]);
 
   const handleJoinCampaign = async () => {
-    try {
-      await post(`/campaigns/${campaignId}/join`, {});
-      toast.success('Successfully joined campaign!');
-      setShowLinksModal(true);
-      refetch();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to join campaign');
-    }
+    // Just show modal to get platform links - don't POST yet
+    setShowLinksModal(true);
   };
 
   const handleSaveLinks = async () => {
@@ -67,11 +61,21 @@ export default function CreatorCampaignDetailPage() {
         return;
       }
 
-      await put(`/campaigns/${campaignId}/creators/${user?.id}`, {
-        action: 'update-links',
-        platformLinks: linksFormData,
-      });
-      toast.success('Platform links saved successfully!');
+      if (!isJoined) {
+        // Join campaign with platform links
+        await post(`/campaigns/${campaignId}/join`, {
+          platformLinks: linksFormData,
+        });
+        toast.success('Successfully joined campaign!');
+      } else {
+        // Update platform links if already joined
+        await put(`/campaigns/${campaignId}/creators/${user?.id}`, {
+          action: 'update-links',
+          platformLinks: linksFormData,
+        });
+        toast.success('Platform links updated successfully!');
+      }
+
       setShowLinksModal(false);
       refetch();
     } catch (error) {
