@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 
 export default function CampaignsPage() {
   useProtectedRoute('admin');
-  const { data, loading, refetch } = useFetch('/api/campaigns');
+  const { data, loading, refetch } = useFetch('/campaigns');
   const { post } = usePost();
   const { put } = usePut();
 
@@ -100,10 +100,10 @@ export default function CampaignsPage() {
       };
       
       if (editingId) {
-        await put(`/api/campaigns/${editingId}`, payload);
+        await put(`/campaigns/${editingId}`, payload);
         toast.success('Campaign updated successfully!');
       } else {
-        await post('/api/campaigns', payload);
+        await post('/campaigns', payload);
         toast.success('Campaign created successfully!');
       }
       refetch();
