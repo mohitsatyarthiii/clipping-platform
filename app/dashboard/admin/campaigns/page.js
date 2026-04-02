@@ -2,25 +2,27 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useProtectedRoute } from '@/lib/hooks/useProtectedRoute';
-import { useFetch, usePost, usePut, useDelete } from '@/lib/hooks/useApi';
+import { useFetch, usePost, usePut } from '@/lib/hooks/useApi';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import Skeleton from '@/components/ui/Skeleton';
-import { Plus, Search, Edit2, Trash2, Users, Link2, Globe, Video, Music, FileText, Image, X } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Users, Link2, Globe, Video, Music, FileText, Image, X, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 export default function CampaignsPage() {
   useProtectedRoute('admin');
+  const router = useRouter();
   const { data, loading, refetch } = useFetch('/campaigns');
   const { post } = usePost();
   const { put } = usePut();
-  const { del } = useDelete(); // Add delete hook
 
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,7 +48,7 @@ export default function CampaignsPage() {
   
   const [editingId, setEditingId] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
-  const [deletingId, setDeletingId] = useState(null); // Track which campaign is being deleted
+  const [deletingId, setDeletingId] = useState(null);
 
   const validateForm = () => {
     const errors = {};
@@ -93,19 +95,34 @@ export default function CampaignsPage() {
   };
 
   const handleDeleteCampaign = async (campaignId) => {
-    // Confirm before deleting
     if (!confirm('Are you sure you want to delete this campaign? This action cannot be undone and will remove all associated data.')) {
       return;
     }
 
     try {
       setDeletingId(campaignId);
-      await del(`/campaigns/${campaignId}`);
-      toast.success('Campaign deleted successfully!');
-      refetch(); // Refresh the list
+      
+      // Use fetch directly instead of useDelete hook
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/campaigns/${campaignId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success('Campaign deleted successfully!');
+        refetch();
+      } else {
+        toast.error(data.message || 'Failed to delete campaign');
+      }
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete campaign');
+      toast.error(error.message || 'Failed to delete campaign');
     } finally {
       setDeletingId(null);
     }
@@ -270,7 +287,7 @@ export default function CampaignsPage() {
                         </Badge>
                       </div>
                       <p className="text-sm text-gray-400">
-                        By {campaign.createdBy?.name || 'Unknown'} • {campaign.description}
+                        By {campaign.createdBy?.name || 'Unknown'} • {campaign.description.substring(0, 100)}...
                       </p>
                       
                       {/* Show source links count */}
@@ -293,21 +310,35 @@ export default function CampaignsPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
+                      {/* View Button - Direct link to campaign details */}
+                      <Link href={`/dashboard/admin/campaigns/${campaign._id}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-400 hover:text-blue-300"
+                        >
+                          <Eye size={18} />
+                        </Button>
+                      </Link>
+                      {/* Edit Button */}
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEditClick(campaign)}
+                        className="text-yellow-400 hover:text-yellow-300"
                       >
                         <Edit2 size={18} />
                       </Button>
+                      {/* Delete Button */}
                       <Button 
-                        variant="destructive" 
+                        variant="ghost" 
                         size="sm"
                         onClick={() => handleDeleteCampaign(campaign._id)}
                         disabled={deletingId === campaign._id}
+                        className="text-red-400 hover:text-red-300"
                       >
                         {deletingId === campaign._id ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-400"></div>
                         ) : (
                           <Trash2 size={18} />
                         )}
