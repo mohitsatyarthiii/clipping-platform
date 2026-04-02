@@ -401,43 +401,24 @@ export async function PUT(req, { params }) {
 }
 
 // DELETE campaign
-// app/api/campaigns/[id]/route.js - DELETE method
 export async function DELETE(req, { params }) {
   try {
     await connectDB();
     
     const { id } = await params;
-    const authHeader = req.headers.get('authorization');
-    
-    console.log('DELETE request for campaign:', id);
-    console.log('Auth header:', authHeader ? 'Present' : 'Missing');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('No token provided');
+    const token = req.headers.get('authorization')?.split(' ')[1];
+
+    if (!token) {
       return Response.json(
-        { success: false, message: 'Unauthorized - No token provided' },
+        { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const token = authHeader.split(' ')[1];
-    
-    let userId;
-    try {
-      const decoded = verifyToken(token);
-      userId = decoded.userId;
-      console.log('User ID from token:', userId);
-    } catch (error) {
-      console.error('Token verification failed:', error.message);
-      return Response.json(
-        { success: false, message: 'Invalid or expired token' },
-        { status: 401 }
-      );
-    }
-
+    const { userId } = verifyToken(token);
     const user = await User.findById(userId);
+
     if (!user || !['admin', 'brand'].includes(user.role)) {
-      console.log('User not authorized:', user?.role);
       return Response.json(
         { success: false, message: 'Only admins and brands can delete campaigns' },
         { status: 403 }
@@ -459,7 +440,6 @@ export async function DELETE(req, { params }) {
       );
     }
 
-    // Brands can only delete their own campaigns
     if (user.role === 'brand' && campaign.createdBy.toString() !== userId) {
       return Response.json(
         { success: false, message: 'You can only delete campaigns you created' },
@@ -468,7 +448,6 @@ export async function DELETE(req, { params }) {
     }
 
     await Campaign.findByIdAndDelete(id);
-    console.log('Campaign deleted successfully:', id);
 
     return Response.json(
       {
@@ -480,7 +459,7 @@ export async function DELETE(req, { params }) {
   } catch (error) {
     console.error('Delete campaign error:', error);
     return Response.json(
-      { success: false, message: 'Failed to delete campaign', error: error.message },
+      { success: false, message: 'Failed to delete campaign' },
       { status: 500 }
     );
   }
