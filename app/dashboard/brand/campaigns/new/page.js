@@ -1,7 +1,7 @@
 // app/dashboard/brand/campaigns/new/page.js
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useProtectedRoute } from '@/lib/hooks/useProtectedRoute';
@@ -14,9 +14,17 @@ import { ArrowLeft, Plus, Trash2, Globe, Video, Music, FileText, Image } from 'l
 import { toast } from 'sonner';
 
 export default function CreateCampaignPage() {
-  useProtectedRoute(['admin', 'brand']);
   const router = useRouter();
-  const { post, loading } = usePost();
+  
+  // Debug: Check if route is working
+  useEffect(() => {
+    console.log('Create Campaign Page Mounted - Brand Route');
+  }, []);
+
+  // Allow both admin and brand
+  const { user, isLoading } = useProtectedRoute(['admin', 'brand']);
+  
+  const { post, loading: apiLoading } = usePost();
 
   const [formData, setFormData] = useState({
     title: '',
@@ -39,21 +47,51 @@ export default function CreateCampaignPage() {
 
   const [errors, setErrors] = useState({});
 
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="px-6 py-8">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto"></div>
+            <p className="text-gray-400 mt-4">Loading...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // If not authorized, don't render (useProtectedRoute will redirect)
+  if (!user) {
+    return null;
+  }
+
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.title || formData.title.trim().length < 3) {
-      newErrors.title = 'Title must be at least 3 characters';
-    }
-    if (!formData.description || formData.description.trim().length < 10) {
-      newErrors.description = 'Description must be at least 10 characters';
-    }
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
+    if (formData.title.length < 3) newErrors.title = 'Title must be at least 3 characters';
+    if (!formData.description.trim()) newErrors.description = 'Description is required';
+    if (formData.description.length < 10) newErrors.description = 'Description must be at least 10 characters';
     if (!formData.payoutPer1000Views || parseFloat(formData.payoutPer1000Views) <= 0) {
       newErrors.payoutPer1000Views = 'Payout must be greater than 0';
+    }
+    if (!formData.startDate) newErrors.startDate = 'Start date is required';
+    if (!formData.endDate) newErrors.endDate = 'End date is required';
+    if (new Date(formData.startDate) >= new Date(formData.endDate)) {
+      newErrors.endDate = 'End date must be after start date';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleAddLink = () => {
@@ -103,6 +141,8 @@ export default function CreateCampaignPage() {
         sourceLinks: sourceLinks,
       };
 
+      console.log('Submitting payload:', payload);
+      
       await post('/campaigns', payload);
       toast.success('Campaign created successfully!');
       router.push('/dashboard/brand/campaigns');
@@ -137,7 +177,7 @@ export default function CreateCampaignPage() {
             onClick={() => router.back()}
             className="gap-2 mb-4"
           >
-            <ArrowLeft size={16} /> Back to Campaigns
+            <ArrowLeft size={16} /> Back
           </Button>
           <h1 className="text-4xl font-bold text-white">Create New Campaign</h1>
           <p className="text-gray-400 mt-2">Set up a new campaign to work with creators</p>
@@ -153,11 +193,9 @@ export default function CreateCampaignPage() {
               </label>
               <Input
                 type="text"
+                name="title"
                 value={formData.title}
-                onChange={(e) => {
-                  setFormData({ ...formData, title: e.target.value });
-                  if (errors.title) setErrors({ ...errors, title: '' });
-                }}
+                onChange={handleChange}
                 placeholder="e.g., Summer Content Challenge 2024"
                 className={errors.title ? 'border-red-500' : ''}
               />
@@ -170,11 +208,9 @@ export default function CreateCampaignPage() {
                 Description *
               </label>
               <Textarea
+                name="description"
                 value={formData.description}
-                onChange={(e) => {
-                  setFormData({ ...formData, description: e.target.value });
-                  if (errors.description) setErrors({ ...errors, description: '' });
-                }}
+                onChange={handleChange}
                 placeholder="Describe your campaign in detail..."
                 rows={4}
                 className={errors.description ? 'border-red-500' : ''}
@@ -300,11 +336,9 @@ export default function CreateCampaignPage() {
                 </label>
                 <Input
                   type="number"
+                  name="payoutPer1000Views"
                   value={formData.payoutPer1000Views}
-                  onChange={(e) => {
-                    setFormData({ ...formData, payoutPer1000Views: e.target.value });
-                    if (errors.payoutPer1000Views) setErrors({ ...errors, payoutPer1000Views: '' });
-                  }}
+                  onChange={handleChange}
                   placeholder="e.g., 10"
                   step="0.01"
                   min="0"
@@ -321,9 +355,12 @@ export default function CreateCampaignPage() {
                 </label>
                 <Input
                   type="date"
+                  name="startDate"
                   value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  onChange={handleChange}
+                  className={errors.startDate ? 'border-red-500' : ''}
                 />
+                {errors.startDate && <p className="text-red-400 text-sm mt-1">{errors.startDate}</p>}
               </div>
 
               <div>
@@ -332,9 +369,12 @@ export default function CreateCampaignPage() {
                 </label>
                 <Input
                   type="date"
+                  name="endDate"
                   value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                  onChange={handleChange}
+                  className={errors.endDate ? 'border-red-500' : ''}
                 />
+                {errors.endDate && <p className="text-red-400 text-sm mt-1">{errors.endDate}</p>}
               </div>
             </div>
 
@@ -344,11 +384,13 @@ export default function CreateCampaignPage() {
                 Campaign Rules & Guidelines
               </label>
               <Textarea
+                name="rules"
                 value={formData.rules}
-                onChange={(e) => setFormData({ ...formData, rules: e.target.value })}
-                placeholder="Enter any specific rules or guidelines for creators"
-                rows={3}
+                onChange={handleChange}
+                placeholder="Enter any specific rules, guidelines, or requirements for this campaign"
+                rows={4}
               />
+              <p className="text-xs text-gray-500 mt-1">Optional - provide guidelines for creators</p>
             </div>
 
             {/* Campaign Status */}
@@ -357,32 +399,34 @@ export default function CreateCampaignPage() {
                 Campaign Status
               </label>
               <select
+                name="status"
                 value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                onChange={handleChange}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
                 <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
                 <option value="paused">Paused</option>
                 <option value="completed">Completed</option>
               </select>
             </div>
 
             {/* Form Actions */}
-            <div className="flex gap-3 justify-end pt-6 border-t border-gray-700/30">
+            <div className="flex gap-3 pt-6 border-t border-gray-700/30">
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => router.back()}
-                disabled={loading}
+                disabled={apiLoading}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={apiLoading}
                 className="bg-gradient-to-r from-cyan-600 to-cyan-500"
               >
-                {loading ? 'Creating...' : 'Create Campaign'}
+                {apiLoading ? 'Creating...' : 'Create Campaign'}
               </Button>
             </div>
           </form>

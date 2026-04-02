@@ -30,11 +30,6 @@ const Sidebar = ({ collapsed = false }) => {
         { href: '/dashboard/admin/campaigns', icon: FileText, label: 'All Campaigns' },
       ],
     },
-    {
-      href: '/dashboard/admin/submissions',
-      icon: CheckCircle,
-      label: 'Submissions',
-    },
     { href: '/dashboard/admin/users', icon: Users, label: 'Users' },
     { href: '/dashboard/admin/earnings', icon: Award, label: 'Earnings' },
   ];
@@ -74,7 +69,7 @@ const Sidebar = ({ collapsed = false }) => {
           description: 'Manage your campaigns'
         },
         { 
-          href: '/dashboard/brand/campaigns/create', 
+          href: '/dashboard/brand/campaigns/new', 
           icon: Upload, 
           label: 'Create Campaign',
           description: 'Launch new campaign'
