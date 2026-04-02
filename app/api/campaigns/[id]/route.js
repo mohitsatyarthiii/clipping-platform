@@ -1,3 +1,4 @@
+// app/api/campaigns/[id]/route.js - COMPLETELY FIXED VERSION
 import connectDB from '@/lib/db';
 import Campaign from '@/models/Campaign';
 import { verifyToken } from '@/lib/jwtService';
@@ -9,16 +10,11 @@ export async function GET(req, { params }) {
   try {
     await connectDB();
     
-    // Await params to ensure it's resolved
     const { id } = await params;
     
     console.log('Fetching campaign with ID:', id);
-    console.log('ID length:', id?.length);
-    console.log('ID is valid ObjectId:', mongoose.Types.ObjectId.isValid(id));
 
-    // Validate MongoDB ObjectId format
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-      console.log('Invalid ObjectId format:', id);
       return Response.json(
         { 
           success: false, 
@@ -29,7 +25,6 @@ export async function GET(req, { params }) {
       );
     }
 
-    // Get auth token - optional
     let userId = null;
     let userRole = null;
     const authHeader = req.headers.get('authorization');
@@ -49,14 +44,12 @@ export async function GET(req, { params }) {
       }
     }
 
-    // Find campaign
     const campaign = await Campaign.findById(id)
       .select('-__v')
       .populate('createdBy', 'name email profileImage')
       .populate('creators.creatorId', 'name email profileImage role bio');
 
     if (!campaign) {
-      console.log('Campaign not found for ID:', id);
       return Response.json(
         { 
           success: false, 
@@ -67,7 +60,6 @@ export async function GET(req, { params }) {
       );
     }
 
-    // Convert to plain object
     const campaignData = campaign.toObject();
 
     // For creators, show if they've already joined
@@ -76,9 +68,24 @@ export async function GET(req, { params }) {
         creator => creator.creatorId?._id?.toString() === userId
       );
       campaignData.hasJoined = hasJoined;
+      
+      // Also get creator's own stats
+      const creatorData = campaignData.creators?.find(
+        creator => creator.creatorId?._id?.toString() === userId
+      );
+      if (creatorData) {
+        campaignData.myStats = {
+          views: creatorData.stats?.views || 0,
+          earnings: creatorData.earnings?.total || 0,
+          pending: creatorData.earnings?.pending || 0,
+          joinedAt: creatorData.joinedAt,
+          platformLinks: creatorData.platformLinks
+        };
+      }
     }
 
-    console.log('Campaign found successfully:', campaignData.title);
+    console.log('Campaign found:', campaignData.title);
+    console.log('Source links:', campaignData.sourceLinks?.length || 0);
     
     return Response.json(
       {
@@ -93,8 +100,7 @@ export async function GET(req, { params }) {
       { 
         success: false, 
         message: 'Failed to fetch campaign', 
-        error: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        error: error.message 
       },
       { status: 500 }
     );
@@ -126,7 +132,6 @@ export async function PUT(req, { params }) {
       );
     }
 
-    // Validate campaign ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return Response.json(
         { success: false, message: 'Invalid campaign ID format' },
@@ -134,7 +139,6 @@ export async function PUT(req, { params }) {
       );
     }
 
-    // Find campaign
     const campaign = await Campaign.findById(id);
     if (!campaign) {
       return Response.json(
@@ -148,19 +152,9 @@ export async function PUT(req, { params }) {
 
     // Handle creator management actions
     if (action) {
-      // Check permissions for creator management
-      if (user.role !== 'admin' && campaign.createdBy.toString() !== userId) {
-        return Response.json(
-          { success: false, message: 'You don\'t have permission to manage creators in this campaign' },
-          { status: 403 }
-        );
-      }
-
-      const { creatorId } = updateData;
-
       switch (action) {
         case 'join':
-          // Allow creator to join campaign
+          // ANY CREATOR CAN JOIN DIRECTLY - NO APPROVAL NEEDED
           if (user.role !== 'creator') {
             return Response.json(
               { success: false, message: 'Only creators can join campaigns' },
@@ -188,20 +182,24 @@ export async function PUT(req, { params }) {
             );
           }
 
-          // Add creator to campaign
+          // Add creator to campaign with platform links
           campaign.creators.push({
             creatorId: userId,
             joinedAt: new Date(),
             status: 'active',
             stats: { views: 0, clicks: 0, conversions: 0 },
             earnings: { total: 0, pending: 0, paid: 0 },
-            platformLinks: {}
+            platformLinks: updateData.platformLinks || {}
           });
 
           await campaign.save();
           
           return Response.json(
-            { success: true, message: 'Successfully joined campaign' },
+            { 
+              success: true, 
+              message: 'Successfully joined campaign! Start creating content to earn money.',
+              campaign: campaign
+            },
             { status: 200 }
           );
 
@@ -214,7 +212,6 @@ export async function PUT(req, { params }) {
             );
           }
 
-          // Check if creator is in campaign
           const creatorIndex = campaign.creators.findIndex(
             c => c.creatorId?.toString() === userId
           );
@@ -226,7 +223,6 @@ export async function PUT(req, { params }) {
             );
           }
 
-          // Remove creator from campaign
           campaign.creators.splice(creatorIndex, 1);
           await campaign.save();
           
@@ -238,12 +234,12 @@ export async function PUT(req, { params }) {
         case 'update-links':
           // Update creator's platform links
           const creatorToUpdate = campaign.creators.find(
-            c => c.creatorId?.toString() === creatorId
+            c => c.creatorId?.toString() === userId
           );
 
           if (!creatorToUpdate) {
             return Response.json(
-              { success: false, message: 'Creator not found in campaign' },
+              { success: false, message: 'You are not a member of this campaign' },
               { status: 404 }
             );
           }
@@ -252,12 +248,20 @@ export async function PUT(req, { params }) {
           await campaign.save();
           
           return Response.json(
-            { success: true, message: 'Creator links updated successfully' },
+            { success: true, message: 'Platform links updated successfully' },
             { status: 200 }
           );
 
         case 'ban':
-          // Ban creator from campaign
+          // Ban creator from campaign (only admin/brand)
+          if (user.role !== 'admin' && campaign.createdBy.toString() !== userId) {
+            return Response.json(
+              { success: false, message: 'You don\'t have permission to ban creators' },
+              { status: 403 }
+            );
+          }
+
+          const { creatorId, bannedReason } = updateData;
           const creatorToBan = campaign.creators.find(
             c => c.creatorId?.toString() === creatorId
           );
@@ -270,7 +274,7 @@ export async function PUT(req, { params }) {
           }
 
           creatorToBan.status = 'banned';
-          creatorToBan.bannedReason = updateData.bannedReason;
+          creatorToBan.bannedReason = bannedReason || 'Violation of campaign rules';
           creatorToBan.bannedAt = new Date();
           await campaign.save();
           
@@ -280,9 +284,17 @@ export async function PUT(req, { params }) {
           );
 
         case 'restore':
-          // Restore banned creator
+          // Restore banned creator (only admin/brand)
+          if (user.role !== 'admin' && campaign.createdBy.toString() !== userId) {
+            return Response.json(
+              { success: false, message: 'You don\'t have permission to restore creators' },
+              { status: 403 }
+            );
+          }
+
+          const restoreCreatorId = updateData.creatorId;
           const creatorToRestore = campaign.creators.find(
-            c => c.creatorId?.toString() === creatorId
+            c => c.creatorId?.toString() === restoreCreatorId
           );
 
           if (!creatorToRestore) {
@@ -303,9 +315,17 @@ export async function PUT(req, { params }) {
           );
 
         case 'remove':
-          // Remove creator from campaign
+          // Remove creator from campaign (only admin/brand)
+          if (user.role !== 'admin' && campaign.createdBy.toString() !== userId) {
+            return Response.json(
+              { success: false, message: 'You don\'t have permission to remove creators' },
+              { status: 403 }
+            );
+          }
+
+          const removeCreatorId = updateData.creatorId;
           const removeIndex = campaign.creators.findIndex(
-            c => c.creatorId?.toString() === creatorId
+            c => c.creatorId?.toString() === removeCreatorId
           );
 
           if (removeIndex === -1) {
@@ -347,10 +367,10 @@ export async function PUT(req, { params }) {
       startDate,
       endDate,
       banner,
-      status
+      status,
+      sourceLinks
     } = updateData;
 
-    // Update campaign fields
     if (title) campaign.title = title.trim();
     if (description) campaign.description = description.trim();
     if (payoutPer1000Views) campaign.payoutPer1000Views = parseFloat(payoutPer1000Views);
@@ -359,6 +379,7 @@ export async function PUT(req, { params }) {
     if (endDate) campaign.endDate = new Date(endDate);
     if (banner !== undefined) campaign.banner = banner;
     if (status) campaign.status = status;
+    if (sourceLinks !== undefined) campaign.sourceLinks = sourceLinks;
 
     await campaign.save();
 
@@ -404,7 +425,6 @@ export async function DELETE(req, { params }) {
       );
     }
 
-    // Validate campaign ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return Response.json(
         { success: false, message: 'Invalid campaign ID format' },
@@ -420,7 +440,6 @@ export async function DELETE(req, { params }) {
       );
     }
 
-    // Brands can only delete their own campaigns
     if (user.role === 'brand' && campaign.createdBy.toString() !== userId) {
       return Response.json(
         { success: false, message: 'You can only delete campaigns you created' },

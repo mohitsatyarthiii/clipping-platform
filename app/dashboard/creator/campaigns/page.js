@@ -1,10 +1,11 @@
+// app/dashboard/creator/campaigns/page.js
 'use client';
 
 import { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useProtectedRoute } from '@/lib/hooks/useProtectedRoute';
 import { useAuthStore } from '@/lib/stores/authStore';
-import { useFetch, usePost } from '@/lib/hooks/useApi';
+import { useFetch, usePost, usePut } from '@/lib/hooks/useApi';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -12,16 +13,18 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import Skeleton from '@/components/ui/Skeleton';
 import Tabs from '@/components/ui/Tabs';
-import { Plus, Search, ExternalLink, Play, TrendingUp, DollarSign, Users, Video } from 'lucide-react';
+import { Plus, Search, ExternalLink, Play, TrendingUp, DollarSign, Users, Video, Link2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 export default function CreatorCampaignsPage() {
   useProtectedRoute('creator');
   const { data: allCampaigns, loading: allLoading, refetch: refetchAll } = useFetch('/campaigns?status=active');
   const { data: myCampaigns, loading: myLoading, refetch: refetchMy } = useFetch('/campaigns?joinedByMe=true');
-  const { data: earnings, loading: earningsLoading } = useFetch('/creator/earnings');
+  const { data: earnings, loading: earningsLoading, refetch: refetchEarnings } = useFetch('/creator/earnings');
   const { post } = usePost();
+  const { put } = usePut();
   const user = useAuthStore((state) => state.user);
 
   const [search, setSearch] = useState('');
@@ -39,7 +42,6 @@ export default function CreatorCampaignsPage() {
   const handleJoinCampaign = async () => {
     if (!selectedCampaign) return;
     
-    // Validate at least one link
     if (!Object.values(platformLinks).some(link => link?.trim())) {
       toast.error('Please add at least one platform link');
       return;
@@ -47,16 +49,21 @@ export default function CreatorCampaignsPage() {
 
     try {
       setIsJoining(true);
-      await post(`/campaigns/${selectedCampaign._id}/join`, { platformLinks });
+      // Use the correct API endpoint - PUT request to update campaign with join action
+      await put(`/campaigns/${selectedCampaign._id}`, {
+        action: 'join',
+        platformLinks: platformLinks
+      });
       toast.success('Successfully joined campaign!');
       setPlatformLinks({ youtube: '', tiktok: '', instagram: '', twitter: '', other: '' });
       setIsJoinModalOpen(false);
       setSelectedCampaign(null);
       refetchAll();
       refetchMy();
+      refetchEarnings();
     } catch (error) {
+      console.error('Join error:', error);
       toast.error(error.response?.data?.message || 'Failed to join campaign');
-      console.error('Error:', error);
     } finally {
       setIsJoining(false);
     }
@@ -127,6 +134,14 @@ export default function CreatorCampaignsPage() {
 
                     <p className="text-sm text-gray-300 mb-4 line-clamp-2">{campaign.description}</p>
 
+                    {/* Show source links count if any */}
+                    {campaign.sourceLinks && campaign.sourceLinks.length > 0 && (
+                      <div className="flex items-center gap-1 mb-3">
+                        <Link2 size={12} className="text-cyan-400" />
+                        <span className="text-xs text-gray-400">{campaign.sourceLinks.length} reference links</span>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-3 mb-4 py-3 border-y border-gray-700/30">
                       <div>
                         <p className="text-xs text-gray-400">Payout Rate</p>
@@ -173,66 +188,79 @@ export default function CreatorCampaignsPage() {
             </Card>
           ) : (
             <div className="space-y-4">
-              {joinedCampaigns.map((campaign, index) => (
-                <motion.div
-                  key={campaign._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <Card className="p-6 hover:border-cyan-500/50 transition-all">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-bold text-white">{campaign.title}</h3>
-                        <p className="text-sm text-gray-400 mt-1">By {campaign.createdBy?.name}</p>
-                      </div>
-                      <Badge variant={campaign.status === 'active' ? 'success' : 'default'}>
-                        {campaign.status}
-                      </Badge>
-                    </div>
-
-                    <p className="text-sm text-gray-300 mb-4">{campaign.description}</p>
-
-                    <div className="grid grid-cols-3 gap-4 mb-4 py-4 border-y border-gray-700/30">
-                      <div>
-                        <p className="text-xs text-gray-400 mb-1">Payout Rate</p>
-                        <p className="text-lg font-bold text-cyan-400">${campaign.payoutPer1000Views}/1K</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400 mb-1">Your Views</p>
-                        <p className="text-lg font-bold text-white">{campaign.yourStats?.views || 0}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400 mb-1">Pending Earning</p>
-                        <p className="text-lg font-bold text-green-400">${campaign.yourStats?.pendingEarnings || 0}</p>
-                      </div>
-                    </div>
-
-                    {campaign.platformLinks && (
-                      <div className="bg-gray-800/30 rounded p-3 text-sm">
-                        <p className="text-gray-400 mb-2">Your Platform Links:</p>
-                        <div className="space-y-1">
-                          {campaign.platformLinks.youtube && (
-                            <a href={campaign.platformLinks.youtube} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 text-xs">
-                              <Play size={14} /> YouTube
-                            </a>
-                          )}
-                          {campaign.platformLinks.tiktok && (
-                            <a href={campaign.platformLinks.tiktok} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 text-xs">
-                              <Video size={14} /> TikTok
-                            </a>
-                          )}
-                          {campaign.platformLinks.instagram && (
-                            <a href={campaign.platformLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-2 text-xs">
-                              📷 Instagram
-                            </a>
-                          )}
+              {joinedCampaigns.map((campaign, index) => {
+                // Find creator's data in the campaign
+                const creatorData = campaign.creators?.find(
+                  c => c.creatorId?._id === user?.id
+                );
+                return (
+                  <motion.div
+                    key={campaign._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <Link href={`/dashboard/creator/campaigns/${campaign._id}`}>
+                      <Card className="p-6 hover:border-cyan-500/50 transition-all cursor-pointer">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors">
+                              {campaign.title}
+                            </h3>
+                            <p className="text-sm text-gray-400 mt-1">By {campaign.createdBy?.name}</p>
+                          </div>
+                          <Badge variant={campaign.status === 'active' ? 'success' : 'default'}>
+                            {campaign.status}
+                          </Badge>
                         </div>
-                      </div>
-                    )}
-                  </Card>
-                </motion.div>
-              ))}
+
+                        <p className="text-sm text-gray-300 mb-4 line-clamp-2">{campaign.description}</p>
+
+                        <div className="grid grid-cols-3 gap-4 mb-4 py-4 border-y border-gray-700/30">
+                          <div>
+                            <p className="text-xs text-gray-400 mb-1">Payout Rate</p>
+                            <p className="text-lg font-bold text-cyan-400">${campaign.payoutPer1000Views}/1K</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-400 mb-1">Your Views</p>
+                            <p className="text-lg font-bold text-white">{creatorData?.stats?.views || 0}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-400 mb-1">Earned</p>
+                            <p className="text-lg font-bold text-green-400">${creatorData?.earnings?.total?.toFixed(2) || 0}</p>
+                          </div>
+                        </div>
+
+                        {creatorData?.platformLinks && Object.values(creatorData.platformLinks).some(v => v) && (
+                          <div className="bg-gray-800/30 rounded p-3 text-sm">
+                            <p className="text-gray-400 mb-2">Your Platform Links:</p>
+                            <div className="flex flex-wrap gap-3">
+                              {creatorData.platformLinks.youtube && (
+                                <a href={creatorData.platformLinks.youtube} target="_blank" rel="noopener noreferrer" 
+                                   className="text-red-400 hover:text-red-300 flex items-center gap-1 text-xs" onClick={(e) => e.stopPropagation()}>
+                                  <Play size={12} /> YouTube
+                                </a>
+                              )}
+                              {creatorData.platformLinks.tiktok && (
+                                <a href={creatorData.platformLinks.tiktok} target="_blank" rel="noopener noreferrer"
+                                   className="text-white hover:text-gray-300 flex items-center gap-1 text-xs" onClick={(e) => e.stopPropagation()}>
+                                  <Video size={12} /> TikTok
+                                </a>
+                              )}
+                              {creatorData.platformLinks.instagram && (
+                                <a href={creatorData.platformLinks.instagram} target="_blank" rel="noopener noreferrer"
+                                   className="text-pink-400 hover:text-pink-300 flex items-center gap-1 text-xs" onClick={(e) => e.stopPropagation()}>
+                                  📷 Instagram
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </Card>
+                    </Link>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -242,7 +270,6 @@ export default function CreatorCampaignsPage() {
       label: 'Earnings',
       content: (
         <div className="space-y-6">
-          {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-green-500/20">
               <p className="text-gray-400 text-sm">Total Earnings</p>
@@ -254,14 +281,13 @@ export default function CreatorCampaignsPage() {
             </Card>
           </div>
 
-          {/* Earnings Breakdown */}
           {earningsLoading ? (
             <Skeleton className="h-96" />
-          ) : earnings?.bycampaign && earnings.bycampaign.length > 0 ? (
+          ) : earnings?.byCampaign && earnings.byCampaign.length > 0 ? (
             <Card className="overflow-hidden">
               <h3 className="text-lg font-bold text-white mb-4">Earnings by Campaign</h3>
               <div className="space-y-2">
-                {earnings.byCamera.map((item, index) => (
+                {earnings.byCampaign.map((item, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-800/30 rounded">
                     <div>
                       <p className="font-medium text-white">{item.campaignName}</p>
@@ -279,7 +305,7 @@ export default function CreatorCampaignsPage() {
             <Card className="text-center py-12">
               <DollarSign size={48} className="mx-auto text-gray-500 mb-3" />
               <p className="text-gray-400">No earnings yet</p>
-              <p className="text-gray-500 text-sm mt-1">Join a campaign and reach viewers to start earning</p>
+              <p className="text-gray-500 text-sm mt-1">Join a campaign and start creating content to earn</p>
             </Card>
           )}
         </div>
@@ -358,7 +384,7 @@ export default function CreatorCampaignsPage() {
               </div>
 
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-sm text-blue-300">
-                Add at least one platform link. You can add more later!
+                Add at least one platform link. Your content views will be tracked from these links.
               </div>
 
               <div className="flex gap-2 justify-end pt-4 border-t border-gray-700/30">
