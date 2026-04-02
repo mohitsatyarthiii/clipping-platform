@@ -1,29 +1,21 @@
 // app/dashboard/brand/campaigns/new/page.js
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
-import { useProtectedRoute } from '@/lib/hooks/useProtectedRoute';
+import { useAuthStore } from '@/lib/stores/authStore';
 import { usePost } from '@/lib/hooks/useApi';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
-import { ArrowLeft, Plus, Trash2, Globe, Video, Music, FileText, Image } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CreateCampaignPage() {
   const router = useRouter();
-  
-  // Debug: Check if route is working
-  useEffect(() => {
-    console.log('Create Campaign Page Mounted - Brand Route');
-  }, []);
-
-  // Allow both admin and brand
-  const { user, isLoading } = useProtectedRoute(['admin', 'brand']);
-  
+  const { user, isLoading: authLoading } = useAuthStore();
   const { post, loading: apiLoading } = usePost();
 
   const [formData, setFormData] = useState({
@@ -47,56 +39,23 @@ export default function CreateCampaignPage() {
 
   const [errors, setErrors] = useState({});
 
-  // Show loading while checking auth
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="px-6 py-8">
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto"></div>
-            <p className="text-gray-400 mt-4">Loading...</p>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  // If not authorized, don't render (useProtectedRoute will redirect)
-  if (!user) {
-    return null;
-  }
-
+  // Simple validation
   const validateForm = () => {
     const newErrors = {};
 
     if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (formData.title.length < 3) newErrors.title = 'Title must be at least 3 characters';
     if (!formData.description.trim()) newErrors.description = 'Description is required';
-    if (formData.description.length < 10) newErrors.description = 'Description must be at least 10 characters';
     if (!formData.payoutPer1000Views || parseFloat(formData.payoutPer1000Views) <= 0) {
       newErrors.payoutPer1000Views = 'Payout must be greater than 0';
-    }
-    if (!formData.startDate) newErrors.startDate = 'Start date is required';
-    if (!formData.endDate) newErrors.endDate = 'End date is required';
-    if (new Date(formData.startDate) >= new Date(formData.endDate)) {
-      newErrors.endDate = 'End date must be after start date';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-  };
-
   const handleAddLink = () => {
     if (!newLink.title.trim()) {
-      toast.error('Please enter a title for the link');
+      toast.error('Please enter a title');
       return;
     }
     if (!newLink.url.trim()) {
@@ -104,17 +63,10 @@ export default function CreateCampaignPage() {
       return;
     }
 
-    try {
-      new URL(newLink.url);
-    } catch (e) {
-      toast.error('Please enter a valid URL (include http:// or https://)');
-      return;
-    }
-
     setSourceLinks([...sourceLinks, { ...newLink }]);
     setNewLink({ title: '', url: '', description: '', type: 'other' });
     setShowAddLinkForm(false);
-    toast.success('Source link added');
+    toast.success('Link added');
   };
 
   const handleRemoveLink = (index) => {
@@ -125,7 +77,7 @@ export default function CreateCampaignPage() {
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error('Please fix the errors in the form');
+      toast.error('Please fix the errors');
       return;
     }
 
@@ -141,62 +93,63 @@ export default function CreateCampaignPage() {
         sourceLinks: sourceLinks,
       };
 
-      console.log('Submitting payload:', payload);
-      
       await post('/campaigns', payload);
-      toast.success('Campaign created successfully!');
+      toast.success('Campaign created!');
       router.push('/dashboard/brand/campaigns');
     } catch (error) {
-      console.error('Create error:', error);
-      toast.error(error.response?.data?.message || 'Failed to create campaign');
+      toast.error('Failed to create campaign');
     }
   };
 
-  const linkTypes = [
-    { value: 'video', label: 'Video', icon: Video, color: 'text-red-400' },
-    { value: 'audio', label: 'Audio', icon: Music, color: 'text-green-400' },
-    { value: 'document', label: 'Document', icon: FileText, color: 'text-blue-400' },
-    { value: 'image', label: 'Image', icon: Image, color: 'text-purple-400' },
-    { value: 'other', label: 'Other', icon: Globe, color: 'text-gray-400' },
-  ];
+  // Loading state
+  if (authLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto"></div>
+            <p className="text-gray-400 mt-4">Loading...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
-  const getLinkIcon = (type) => {
-    const linkType = linkTypes.find(t => t.value === type);
-    const Icon = linkType?.icon || Globe;
-    return <Icon size={16} className={linkType?.color || 'text-gray-400'} />;
-  };
+  // Auth check
+  if (!user || (user.role !== 'admin' && user.role !== 'brand')) {
+    return null;
+  }
 
   return (
     <DashboardLayout>
-      <div className="px-6 py-8 max-w-4xl mx-auto">
+      <div className="p-6 max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.back()}
-            className="gap-2 mb-4"
+            className="mb-4"
           >
             <ArrowLeft size={16} /> Back
           </Button>
-          <h1 className="text-4xl font-bold text-white">Create New Campaign</h1>
-          <p className="text-gray-400 mt-2">Set up a new campaign to work with creators</p>
+          <h1 className="text-3xl font-bold text-white">Create New Campaign</h1>
+          <p className="text-gray-400 mt-1">Set up a campaign for creators</p>
         </div>
 
         {/* Form */}
-        <Card className="p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Campaign Title */}
+        <Card className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-1">
                 Campaign Title *
               </label>
               <Input
                 type="text"
-                name="title"
                 value={formData.title}
-                onChange={handleChange}
-                placeholder="e.g., Summer Content Challenge 2024"
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="Enter campaign title"
                 className={errors.title ? 'border-red-500' : ''}
               />
               {errors.title && <p className="text-red-400 text-sm mt-1">{errors.title}</p>}
@@ -204,125 +157,96 @@ export default function CreateCampaignPage() {
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-1">
                 Description *
               </label>
               <Textarea
-                name="description"
                 value={formData.description}
-                onChange={handleChange}
-                placeholder="Describe your campaign in detail..."
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Describe your campaign"
                 rows={4}
                 className={errors.description ? 'border-red-500' : ''}
               />
               {errors.description && <p className="text-red-400 text-sm mt-1">{errors.description}</p>}
             </div>
 
-            {/* Source Links Section */}
+            {/* Source Links */}
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-gray-300">
-                  Source Content Links
-                </label>
-                {!showAddLinkForm && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowAddLinkForm(true)}
-                    className="gap-1 text-cyan-400"
-                  >
-                    <Plus size={16} /> Add Link
-                  </Button>
-                )}
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium text-gray-300">Source Links</label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAddLinkForm(true)}
+                  className="text-cyan-400"
+                >
+                  <Plus size={14} /> Add Link
+                </Button>
               </div>
-              <p className="text-xs text-gray-500 mb-3">
-                Add reference links that creators can use for content inspiration
-              </p>
 
-              {/* Display existing source links */}
+              {/* Existing Links */}
               {sourceLinks.length > 0 && (
-                <div className="space-y-2 mb-4">
-                  {sourceLinks.map((link, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-slate-800/50 border border-gray-700/30 rounded-lg">
-                      <div className="flex items-center gap-3 flex-1">
-                        {getLinkIcon(link.type)}
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-white">{link.title}</p>
-                          <a 
-                            href={link.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-xs text-cyan-400 hover:underline truncate block"
-                          >
-                            {link.url}
-                          </a>
-                          {link.description && (
-                            <p className="text-xs text-gray-400 mt-1">{link.description}</p>
-                          )}
-                        </div>
+                <div className="space-y-2 mb-3">
+                  {sourceLinks.map((link, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-slate-800/50 rounded border border-gray-700">
+                      <div>
+                        <p className="text-sm text-white">{link.title}</p>
+                        <p className="text-xs text-gray-400 truncate max-w-md">{link.url}</p>
                       </div>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRemoveLink(index)}
-                        className="text-red-400 hover:text-red-300"
+                        onClick={() => handleRemoveLink(idx)}
+                        className="text-red-400"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                       </Button>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Add new link form */}
+              {/* Add Link Form */}
               {showAddLinkForm && (
-                <div className="p-4 border border-cyan-500/30 rounded-lg bg-slate-800/50">
-                  <h4 className="text-sm font-medium text-white mb-3">Add New Source Link</h4>
-                  <div className="space-y-3">
-                    <Input
-                      placeholder="Link Title *"
-                      value={newLink.title}
-                      onChange={(e) => setNewLink({ ...newLink, title: e.target.value })}
-                    />
-                    <Input
-                      placeholder="URL * (include http:// or https://)"
-                      value={newLink.url}
-                      onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
-                    />
-                    <Input
-                      placeholder="Description (Optional)"
-                      value={newLink.description}
-                      onChange={(e) => setNewLink({ ...newLink, description: e.target.value })}
-                    />
-                    <select
-                      value={newLink.type}
-                      onChange={(e) => setNewLink({ ...newLink, type: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    >
-                      {linkTypes.map(type => (
-                        <option key={type.value} value={type.value}>{type.label}</option>
-                      ))}
-                    </select>
-                    <div className="flex gap-2 justify-end">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowAddLinkForm(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={handleAddLink}
-                        className="bg-cyan-600"
-                      >
-                        Add Link
-                      </Button>
-                    </div>
+                <div className="p-3 border border-cyan-500/30 rounded bg-slate-800/50 space-y-2">
+                  <Input
+                    placeholder="Title"
+                    value={newLink.title}
+                    onChange={(e) => setNewLink({ ...newLink, title: e.target.value })}
+                    className="text-sm"
+                  />
+                  <Input
+                    placeholder="URL"
+                    value={newLink.url}
+                    onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+                    className="text-sm"
+                  />
+                  <Input
+                    placeholder="Description (optional)"
+                    value={newLink.description}
+                    onChange={(e) => setNewLink({ ...newLink, description: e.target.value })}
+                    className="text-sm"
+                  />
+                  <select
+                    value={newLink.type}
+                    onChange={(e) => setNewLink({ ...newLink, type: e.target.value })}
+                    className="w-full p-2 bg-slate-800 border border-slate-600 rounded text-white text-sm"
+                  >
+                    <option value="video">Video</option>
+                    <option value="audio">Audio</option>
+                    <option value="document">Document</option>
+                    <option value="image">Image</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <div className="flex gap-2 justify-end">
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setShowAddLinkForm(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="button" size="sm" onClick={handleAddLink} className="bg-cyan-600">
+                      Add
+                    </Button>
                   </div>
                 </div>
               )}
@@ -331,101 +255,72 @@ export default function CreateCampaignPage() {
             {/* Payout and Dates */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Payout per 1K Views ($) *
                 </label>
                 <Input
                   type="number"
-                  name="payoutPer1000Views"
                   value={formData.payoutPer1000Views}
-                  onChange={handleChange}
-                  placeholder="e.g., 10"
+                  onChange={(e) => setFormData({ ...formData, payoutPer1000Views: e.target.value })}
+                  placeholder="10"
                   step="0.01"
-                  min="0"
                   className={errors.payoutPer1000Views ? 'border-red-500' : ''}
                 />
-                {errors.payoutPer1000Views && (
-                  <p className="text-red-400 text-sm mt-1">{errors.payoutPer1000Views}</p>
-                )}
+                {errors.payoutPer1000Views && <p className="text-red-400 text-sm">{errors.payoutPer1000Views}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Start Date *
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Start Date</label>
                 <Input
                   type="date"
-                  name="startDate"
                   value={formData.startDate}
-                  onChange={handleChange}
-                  className={errors.startDate ? 'border-red-500' : ''}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 />
-                {errors.startDate && <p className="text-red-400 text-sm mt-1">{errors.startDate}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  End Date *
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">End Date</label>
                 <Input
                   type="date"
-                  name="endDate"
                   value={formData.endDate}
-                  onChange={handleChange}
-                  className={errors.endDate ? 'border-red-500' : ''}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                 />
-                {errors.endDate && <p className="text-red-400 text-sm mt-1">{errors.endDate}</p>}
               </div>
             </div>
 
             {/* Rules */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Campaign Rules & Guidelines
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Rules & Guidelines
               </label>
               <Textarea
-                name="rules"
                 value={formData.rules}
-                onChange={handleChange}
-                placeholder="Enter any specific rules, guidelines, or requirements for this campaign"
-                rows={4}
+                onChange={(e) => setFormData({ ...formData, rules: e.target.value })}
+                placeholder="Any rules for creators"
+                rows={3}
               />
-              <p className="text-xs text-gray-500 mt-1">Optional - provide guidelines for creators</p>
             </div>
 
-            {/* Campaign Status */}
+            {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Campaign Status
-              </label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
               <select
-                name="status"
                 value={formData.status}
-                onChange={handleChange}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="w-full p-2 bg-slate-800 border border-slate-600 rounded text-white"
               >
                 <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
                 <option value="paused">Paused</option>
                 <option value="completed">Completed</option>
               </select>
             </div>
 
-            {/* Form Actions */}
-            <div className="flex gap-3 pt-6 border-t border-gray-700/30">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => router.back()}
-                disabled={apiLoading}
-              >
+            {/* Buttons */}
+            <div className="flex gap-3 pt-4 border-t border-gray-700">
+              <Button type="button" variant="ghost" onClick={() => router.back()} disabled={apiLoading}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={apiLoading}
-                className="bg-gradient-to-r from-cyan-600 to-cyan-500"
-              >
+              <Button type="submit" disabled={apiLoading} className="bg-cyan-600">
                 {apiLoading ? 'Creating...' : 'Create Campaign'}
               </Button>
             </div>
