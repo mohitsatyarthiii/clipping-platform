@@ -1,9 +1,10 @@
+// app/dashboard/admin/campaigns/page.js
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useProtectedRoute } from '@/lib/hooks/useProtectedRoute';
-import { useFetch, usePost, usePut } from '@/lib/hooks/useApi';
+import { useFetch, usePost, usePut, useDelete } from '@/lib/hooks/useApi';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -19,6 +20,7 @@ export default function CampaignsPage() {
   const { data, loading, refetch } = useFetch('/campaigns');
   const { post } = usePost();
   const { put } = usePut();
+  const { del } = useDelete(); // Add delete hook
 
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,6 +46,7 @@ export default function CampaignsPage() {
   
   const [editingId, setEditingId] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
+  const [deletingId, setDeletingId] = useState(null); // Track which campaign is being deleted
 
   const validateForm = () => {
     const errors = {};
@@ -72,7 +75,6 @@ export default function CampaignsPage() {
       return;
     }
     
-    // Validate URL format
     try {
       new URL(newLink.url);
     } catch (e) {
@@ -88,6 +90,25 @@ export default function CampaignsPage() {
 
   const handleRemoveLink = (index) => {
     setSourceLinks(sourceLinks.filter((_, i) => i !== index));
+  };
+
+  const handleDeleteCampaign = async (campaignId) => {
+    // Confirm before deleting
+    if (!confirm('Are you sure you want to delete this campaign? This action cannot be undone and will remove all associated data.')) {
+      return;
+    }
+
+    try {
+      setDeletingId(campaignId);
+      await del(`/campaigns/${campaignId}`);
+      toast.success('Campaign deleted successfully!');
+      refetch(); // Refresh the list
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete campaign');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleSubmit = useCallback(async (e) => {
@@ -107,10 +128,10 @@ export default function CampaignsPage() {
         startDate: new Date(formData.startDate),
         endDate: new Date(formData.endDate),
         status: formData.status,
-        sourceLinks: sourceLinks, // Source links ko payload mein bhej rahe hain
+        sourceLinks: sourceLinks,
       };
       
-      console.log('Submitting payload:', JSON.stringify(payload, null, 2)); // Debug log
+      console.log('Submitting payload:', JSON.stringify(payload, null, 2));
       
       if (editingId) {
         await put(`/campaigns/${editingId}`, payload);
@@ -279,8 +300,17 @@ export default function CampaignsPage() {
                       >
                         <Edit2 size={18} />
                       </Button>
-                      <Button variant="destructive" size="sm">
-                        <Trash2 size={18} />
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => handleDeleteCampaign(campaign._id)}
+                        disabled={deletingId === campaign._id}
+                      >
+                        {deletingId === campaign._id ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        ) : (
+                          <Trash2 size={18} />
+                        )}
                       </Button>
                     </div>
                   </div>
