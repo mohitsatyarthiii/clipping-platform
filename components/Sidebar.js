@@ -76,18 +76,6 @@ const Sidebar = ({ collapsed = false }) => {
         },
       ],
     },
-   
-    {
-      section: 'Settings',
-      items: [
-        { 
-          href: '/dashboard/brand/settings', 
-          icon: Settings, 
-          label: 'Settings',
-          description: 'Account preferences'
-        },
-      ],
-    },
   ];
 
   let menuItems = [];
