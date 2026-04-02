@@ -94,56 +94,40 @@ export default function CampaignsPage() {
     setSourceLinks(sourceLinks.filter((_, i) => i !== index));
   };
 
-
   const handleDeleteCampaign = async (campaignId) => {
-  if (!confirm('Are you sure you want to delete this campaign? This action cannot be undone and will remove all associated data.')) {
-    return;
-  }
-
-  try {
-    setDeletingId(campaignId);
-    
-    // Get fresh token from localStorage
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-      toast.error('You are not logged in. Please login again.');
+    if (!confirm('Are you sure you want to delete this campaign? This action cannot be undone and will remove all associated data.')) {
       return;
     }
-    
-    console.log('Deleting campaign:', campaignId);
-    
-    const response = await fetch(`/api/campaigns/${campaignId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    const data = await response.json();
-    console.log('Delete response:', data);
-    
-    if (response.ok && data.success) {
-      toast.success('Campaign deleted successfully!');
-      refetch(); // Refresh the list
-    } else {
-      // Handle specific error cases
-      if (response.status === 401) {
-        toast.error('Session expired. Please login again.');
-        // Optionally redirect to login
-        // router.push('/login');
+
+    try {
+      setDeletingId(campaignId);
+      
+      // Use fetch directly instead of useDelete hook
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/campaigns/${campaignId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success('Campaign deleted successfully!');
+        refetch();
       } else {
         toast.error(data.message || 'Failed to delete campaign');
       }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error(error.message || 'Failed to delete campaign');
+    } finally {
+      setDeletingId(null);
     }
-  } catch (error) {
-    console.error('Delete error:', error);
-    toast.error(error.message || 'Failed to delete campaign');
-  } finally {
-    setDeletingId(null);
-  }
-};
+  };
+
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
