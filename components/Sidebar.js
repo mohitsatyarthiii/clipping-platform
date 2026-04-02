@@ -14,11 +14,6 @@ import {
   Award,
   Upload,
   Video,
-  ChevronLeft,
-  ChevronRight,
-  BarChart3,
-  DollarSign,
-  TrendingUp,
   Briefcase,
 } from 'lucide-react';
 
@@ -33,13 +28,7 @@ const Sidebar = ({ collapsed = false }) => {
       section: 'Campaigns',
       items: [
         { href: '/dashboard/admin/campaigns', icon: FileText, label: 'All Campaigns' },
-        { href: '/dashboard/admin/campaigns/create', icon: Upload, label: 'Create Campaign' },
       ],
-    },
-    {
-      href: '/dashboard/admin/join-requests',
-      icon: Users,
-      label: 'Join Requests',
     },
     {
       href: '/dashboard/admin/submissions',
